@@ -23,6 +23,7 @@ def start_game():
     minigame_1_rect = minigame_1.get_rect(topleft=(200, 400))
     minigame_2_rect = minigame_2.get_rect(topleft=(800, 400))
     minigame_3_rect = minigame_3.get_rect(topleft=(1300, 400))
+    
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
