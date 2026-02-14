@@ -12,26 +12,36 @@ pygame.mixer.music.load("Assets/Test music.mp3")
 pygame.mixer.music.play(-1)  # -1 means loop forever, or use 0 for play once
 pygame.mixer.music.set_volume(1) # Volume: 0.0 to 1.0
 
+# Load and scale game name image
+Game_name = pygame.image.load("Assets/Game name.png")
+Game_name = pygame.transform.scale(Game_name, (500, 500))
+
 # Load and scale background image
 background = pygame.image.load("Assets/Background.jpg")
 background = pygame.transform.scale(background, (1920, 1080))
 
+# Load and scale play button image
+play_button_img = pygame.image.load("Assets/Play buntton.png")
+play_button_img = pygame.transform.scale(play_button_img, (300, 150))
+play_button_original = play_button_img.copy()
+
 # Define Play button properties
-button_rect_play = pygame.Rect(885, 480, 150, 50)
-button_color = (100, 100, 255)
-button_text_play = "Play"
-font_play = pygame.font.Font(None, 36)
-scale_play = 1.0
+button_rect_play = pygame.Rect(810, 430, 300, 150)
+button_rect_original = button_rect_play.copy()
+
+# Load and scale quit button image
+quit_button_img = pygame.image.load("Assets/Quit buntton.png")
+quit_button_img = pygame.transform.scale(quit_button_img, (300, 150))
+quit_button_original = quit_button_img.copy()
 
 # Quit button properties
-button_rect_quit = pygame.Rect(885, 600, 150, 50)
-font_quit = pygame.font.Font(None, 36)
-button_text_quit = "Quit"
+button_rect_quit = pygame.Rect(810, 600, 300, 150)
+button_rect_quit_original = button_rect_quit.copy()
 
 
 # Variables for button animation
-button_original_rect_play = button_rect_play.copy()
-button_pressed_play = False 
+button_pressed_play = False
+button_pressed_quit = False
 
 while running:
     # pygame.QUIT event means the user clicked X to close your window
@@ -44,44 +54,60 @@ while running:
             if button_rect_play.collidepoint(event.pos):  
                 button_pressed_play = True
             if button_rect_quit.collidepoint(event.pos):
-                running = False
+                button_pressed_quit = True
         #detect mouse release
         if event.type == pygame.MOUSEBUTTONUP:
-            button_pressed_play = False
-            Game.start_game()  # Start the game when Play button is released
+            if button_pressed_play:
+                button_pressed_play = False
+                Game.start_game()  # Start the game when Play button is released
+            if button_pressed_quit:
+                button_pressed_quit = False
+                running = False
             
     
-    #Update animation for Play button
-    dt = clock.tick(60) / 1000  #Delta time in seconds
+    #Update animation
+    clock.tick(60)
     
     #Scale button based on animation for Play button
     if button_pressed_play:
         #Scale down the button
         scale_play = 0.9
-        new_width = int(button_original_rect_play.width * scale_play)
-        new_height = int(button_original_rect_play.height * scale_play)
+        new_width = int(button_rect_original.width * scale_play)
+        new_height = int(button_rect_original.height * scale_play)
+        play_button_img = pygame.transform.scale(play_button_original, (new_width, new_height))
         button_rect_play.width = new_width
         button_rect_play.height = new_height
-        button_rect_play.center = button_original_rect_play.center
-        font_play = pygame.font.Font(None, int(36 * scale_play))
+        button_rect_play.center = button_rect_original.center
     else:
         #Reset to original size
-        button_rect_play = button_original_rect_play.copy()
-        font_play = pygame.font.Font(None, int(36))
-        scale_play = 1.0
+        play_button_img = play_button_original.copy()
+        button_rect_play = button_rect_original.copy()
+    
+    #Scale button based on animation for Quit button
+    if button_pressed_quit:
+        #Scale down the button
+        new_width = int(button_rect_quit_original.width * 0.9)
+        new_height = int(button_rect_quit_original.height * 0.9)
+        quit_button_img = pygame.transform.scale(quit_button_original, (new_width, new_height))
+        button_rect_quit.width = new_width
+        button_rect_quit.height = new_height
+        button_rect_quit.center = button_rect_quit_original.center
+    else:
+        #Reset to original size
+        quit_button_img = quit_button_original.copy()
+        button_rect_quit = button_rect_quit_original.copy()
     
     #Show the background
     screen.blit(background, (0, 0))
 
-    #Draw the Play button
-    pygame.draw.rect(screen, button_color, button_rect_play)
-    text_surface = font_play.render(button_text_play, True, (255, 255, 255))
-    screen.blit(text_surface, (button_rect_play.x + 50 * scale_play, button_rect_play.y + 10 * scale_play))
+    #Show the game name
+    screen.blit(Game_name, (700, 10))
 
-    #Draw the Quit button
-    pygame.draw.rect(screen, (255, 100, 100), button_rect_quit)
-    text_surface_quit = font_quit.render(button_text_quit, True, (255, 255, 255))
-    screen.blit(text_surface_quit, (button_rect_quit.x + 50, button_rect_quit.y + 10))
+    #Draw the Play button image
+    screen.blit(play_button_img, button_rect_play)
+
+    #Draw the Quit button image
+    screen.blit(quit_button_img, button_rect_quit)
 
     # flip() the display to put your work on screen
     pygame.display.flip()
