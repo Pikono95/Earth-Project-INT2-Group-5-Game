@@ -4,6 +4,7 @@ def start_game():
     from Minigames import Minigame1
     from Minigames import Minigame2
     from Minigames import Minigame3
+    from Data import score
 
     pygame.init()
     screen = pygame.display.set_mode((1920, 1080))
@@ -42,6 +43,11 @@ def start_game():
         font = pygame.font.Font(None, 74)
         text = font.render("Game to be done", True, (255, 255, 255))
         screen.blit(text, (760, 500))
+        
+        #display score
+        score_font = pygame.font.Font(None, 50)
+        score_text = score_font.render(f"Score: {score}", True, (255, 255, 255))
+        screen.blit(score_text, (50, 50))
 
         #draw the minigame images
         screen.blit(minigame_1, minigame_1_rect)
