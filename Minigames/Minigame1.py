@@ -2,6 +2,23 @@ import pygame
 import sys
 import random
 
+#à faire
+#-sprites
+#-intégrer les sprites au fonctionnement du jeu
+#-changer ce décors de con
+#-faire un menu
+#-faire des persos avec des attaques (à gérer grace à des classes i guess mais c'est compliqué car joueuers mouvements géré par classe joueur)
+
+#idées:
+#-méchants vs gentils
+#poubelles vs les propres
+
+#pb à régler
+#-barre pv en pourcentage pv / globaliser les pvs
+
+#à paufiner:
+#self hit timer
+
 pygame.init()
 
 WIDTH, HEIGHT = 1000, 500
@@ -10,13 +27,15 @@ pygame.display.set_caption("Skibidi fighter prototype")
 clock = pygame.time.Clock()
 
 GROUND_Y = HEIGHT - 80
-GRAVITY = 0.9
+GRAVITY = 1 #/!\ ne pas toucher /!\
 
 font = pygame.font.SysFont(None, 60)
 small_font = pygame.font.SysFont(None, 36)
 
 projectiles = []
 particles = []
+
+#initialisation du décors
 
 sky_color = (40, 60, 120)
 sun_pos = (800, 100)
@@ -25,6 +44,7 @@ for i in range(0, WIDTH, 80):
     h = random.randint(80, 180)
     buildings.append((i, h))
 
+#gestion particules effets visuels
 
 class Particle:
     def __init__(self, x, y):
@@ -44,6 +64,7 @@ class Particle:
         if self.life > 0:
             pygame.draw.circle(screen, (255, 255, 255), (int(self.x), int(self.y)), 3)
 
+#projectiles (tirs ect)
 
 class Projectile:
     def __init__(self, x, y, direction, color, damage, speed):
@@ -57,9 +78,9 @@ class Projectile:
     def update(self, opponent):
         self.rect.x += self.direction * self.speed
         if self.rect.colliderect(opponent.rect):
-            opponent.health -= self.damage
+            opponent.health -= self.damage #gestion damage 'important équilibrage'
             opponent.health = max(0, opponent.health)
-            opponent.hit_timer = 10
+            opponent.hit_timer = 10 #hit timer pour pas se faire spammer
             opponent.rect.x += self.direction * 20
             for _ in range(6):
                 particles.append(Particle(opponent.rect.centerx, opponent.rect.centery))
@@ -70,27 +91,32 @@ class Projectile:
     def draw(self):
         pygame.draw.rect(screen, self.color, self.rect)
 
+#génération persos
 
 class Fighter:
     def __init__(self, x, color, controls, name):
         self.rect = pygame.Rect(x, GROUND_Y - 140, 70, 140)
         self.color = color
-        self.controls = controls
+        self.controls = controls #voir en bas les controles (à mettre dans le menu pour plus tard)
         self.vel_y = 0
-        self.speed = 6
-        self.jump_force = -18
-        self.health = 200
-        self.facing = 1
-        self.attack_timer = 0
+        self.speed = 6 #vitesse (à pas toucher pour l'instant sinon ça break tout)
+        self.jump_force = -18 #ptet mettre plus haut les sauts c'est des putains de ninjas de l'écologie ou quoi
+        self.health = 300
+        self.basehealth = 300
+        self.healthpourcent = self.health / self.basehealth
+        self.facing = 1 #putain de facing qui me fait chier sa race (à corriger pour l'offset des persos et pour l'apparition des putains de coup car là ça fonctionne pas)
+        self.attack_timer = 0 
         self.hit_timer = 0
         self.special_timer = 0
-        self.name = name
+        self.name = name #pour les menus et les scoreboards plus tard i guess
+
+#à refaire pour rendre les mouvements plus tard
 
     def move(self, keys, opponent):
         dx = 0
         if self.hit_timer == 0:
             if keys[self.controls["left"]]:
-                dx = -self.speed
+                dx = -self.speed 
                 self.facing = -1
             if keys[self.controls["right"]]:
                 dx = self.speed
@@ -114,12 +140,14 @@ class Fighter:
         if self.rect.bottom >= GROUND_Y:
             self.rect.bottom = GROUND_Y
             self.vel_y = 0
-        if self.attack_timer > 0:
+        if self.attack_timer > 0: #pour pas pouvoir spammer attack timer
             self.attack_timer -= 1
-        if self.hit_timer > 0:
+        if self.hit_timer > 0: #boucle update timer  => 0
             self.hit_timer -= 1
-        if self.special_timer > 0:
+        if self.special_timer > 0: #boucle spécial timer (ultime plus long)
             self.special_timer -= 1
+
+#les putains d'attaques de mélées qui s'affichent pas à régler et intégrer aux sprites
 
     def melee(self, opponent, damage, reach, height):
         if self.attack_timer == 0:
@@ -137,12 +165,14 @@ class Fighter:
                 for _ in range(6):
                     particles.append(Particle(opponent.rect.centerx, opponent.rect.centery))
 
+#faire des projectiles déchets pour un côté et monsieur propre de l'autre
+
     def shoot(self):
         if self.attack_timer == 0:
             self.attack_timer = 30
             x = self.rect.right if self.facing == 1 else self.rect.left - 20
             y = self.rect.centery
-            projectiles.append(Projectile(x, y, self.facing, (0, 255, 255), 8, 10))
+            projectiles.append(Projectile(x, y, self.facing, (0, 255, 255), 10, 10))
 
     def special(self, opponent):
         if self.special_timer == 0:
@@ -165,12 +195,15 @@ class Fighter:
         pygame.draw.rect(screen, c, (self.rect.x + 10, self.rect.y + 100, 20, 40))
         pygame.draw.rect(screen, c, (self.rect.x + 40, self.rect.y + 100, 20, 40))
 
+#faire la barre en pourcentage (fin faut régler l'affichage et le remttre en % des pvs max perdus que gérés par le nb)
 
-def draw_health(x, y, health):
-    pygame.draw.rect(screen, (200, 50, 50), (x, y, 300, 25))
-    pygame.draw.rect(screen, (50, 200, 50), (x, y, 3 * health, 25))
-    pygame.draw.rect(screen, (0, 0, 0), (x, y, 300, 25), 3)
+def draw_health(x, y, healthpourcent):
+    pygame.draw.rect(screen, (200, 50, 50), (x, y, 30, 25))
+    pygame.draw.rect(screen, (50, 200, 50), (x, y, healthpourcent*1.5, 25)) #vert des barres
+    pygame.draw.rect(screen, (0, 0, 0), (x, y, 300, 25), 3) #contour des barres
+    print(healthpourcent)
 
+#putains de background dégeu mais c'est le max que je peux faire
 
 def draw_background():
     screen.fill(sky_color)
@@ -178,6 +211,7 @@ def draw_background():
     for b in buildings:
         pygame.draw.rect(screen, (25, 25, 45), (b[0], GROUND_Y - b[1], 60, b[1]))
 
+#contrôles
 
 p1_controls = {
     "left": pygame.K_q,
@@ -204,6 +238,8 @@ player2 = Fighter(700, (60, 60, 220), p2_controls, "blue")
 
 game_over = False
 winner = ""
+
+#boucles du jeu
 
 running = True
 while running:
@@ -252,6 +288,8 @@ while running:
             particle.update()
             if particle.life <= 0:
                 particles.remove(particle)
+
+        #boucles de fin du jeu
 
         if player1.health <= 0:
             winner = "BLUE WINS"
