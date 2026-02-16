@@ -28,6 +28,7 @@ class Projectile:
     
     def update(self):
         self.x += self.vx * self.direction
+        
         self.y += self.vy
 
     def draw(self):
@@ -46,7 +47,7 @@ class Particle:
     def update(self):
         self.x += self.vx
         self.y += self.vy
-        self.vy += 0.2
+        
         self.life -= 1
 
     def draw(self):
@@ -55,7 +56,7 @@ class Particle:
 
 class Player: 
 
-    def __init___(self,x,y,vx,vy,facing,person):
+    def __init__(self,person,x,y,vx,vy,facing):
         self.x = x
         self.y = y
         self.vx = vx
@@ -66,28 +67,80 @@ class Player:
     def update(self):
         self.x += self.vx
         self.y += self.vy
-        self.vy += variables["Gravity"]
-
-        if self.y > variables["Ground _height"]:
+        self.jumpingpower = -20
+        if self.y < variables["Ground _height"]:
+            self.jumping = True
+            self.vy += variables["Gravity"]
+        elif self.y > variables["Ground _height"]:
             self.y = variables["Ground _height"]
             self.vy = 0
+            self.jumping = False
+        else:
+            self.vy = 0
+            self.jumping = False
+        self.vx *= 0.84
+        if self.vx < 1 and self.vx > -1:
+            self.vx = 0
+        print(self.jumping)
+        
+        if self.x < 0:
+            self.x = 0
+        elif self.x > WIDTH - 30:
+            self.x = WIDTH - 30
+        if pygame.key.get_pressed()[keys["crouch"]]:
+            self.crouching = 25
+            if self.jumping == True:
+                self.vy = 40
+            else:
+                self.jumpingpower = -40
+                self.jumping = False
+        else:
+            self.crouching = 0
+
+
+        
+
+    def draw(self):
+        pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y - 50 + self.crouching, 30, 50 - self.crouching))
+
+    def move(self):
+        speed = 8
+        if pygame.key.get_pressed()[keys["crouch"]]:
+            speed = 4
+        if pygame.key.get_pressed()[keys["jump"]] and pygame.key.get_pressed()[keys["crouch"]]:
+            self.jumping = False
+        if pygame.key.get_pressed()[keys["left"]]:
+            self.vx = -speed
+            self.facing = "left"
+        if pygame.key.get_pressed()[keys["right"]]:
+            self.vx = speed
+            self.facing = "right"
+        if pygame.key.get_pressed()[keys["left"]] and pygame.key.get_pressed()[keys["right"]]:
+            self.vx = 0
+        if pygame.key.get_pressed()[keys["jump"]] and self.jumping == False:
+            if self.vy == 0:
+                self.vy = self.jumpingpower
+        
 
 #keys
 
 keys = {
-    "left" : pygame.K_a,
+    "left" : pygame.K_q,
     "right" : pygame.K_d,
-    "jump" : pygame.K_w,
-    "shoot" : pygame.K_f
-    "punch" : pygame.K_r
-    "kick" : pygame.K_e
+    "jump" : pygame.K_z,
+    "crouch" : pygame.K_s,
+    "shoot" : pygame.K_f,
+    "punch" : pygame.K_r,
+    "kick" : pygame.K_e,
 }
+
+player1 = Player("player1",100, variables["Ground _height"], 0, 0, "right")
 
 #game loop
 
 run = True
 while run:
-    clock.tick(24)
+    clock.tick(60)
     screen.fill(variables["sky color"])
     
     for event in pygame.event.get():
@@ -96,6 +149,10 @@ while run:
 
     if pygame.key.get_pressed()[pygame.K_ESCAPE]:
         run = False
+    
+    player1.update()
+    player1.draw()
+    player1.move()
 
     pygame.display.flip()
 
