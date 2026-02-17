@@ -9,6 +9,8 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Skibidi fighter prototype")
 clock = pygame.time.Clock()
 
+placeholder = pygame.image.load("Assets\\images.png")
+
 variables = {
     "Gravity" : 1,
     "Ground _height" : 400,
@@ -78,10 +80,13 @@ class Player:
         else:
             self.vy = 0
             self.jumping = False
-        self.vx *= 0.84
+        self.vx *= 0.7
         if self.vx < 1 and self.vx > -1:
             self.vx = 0
-        print(self.jumping)
+
+
+        if self.x == 0 or self.x == WIDTH - 30:
+            self.vx = -self.vx
         
         if self.x < 0:
             self.x = 0
@@ -89,7 +94,7 @@ class Player:
             self.x = WIDTH - 30
         if pygame.key.get_pressed()[keys["crouch"]]:
             self.crouching = 25
-            if self.jumping == True:
+            if self.jumping == True and self.vy < 0:
                 self.vy = 40
             else:
                 self.jumpingpower = -40
@@ -104,7 +109,7 @@ class Player:
         pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y - 50 + self.crouching, 30, 50 - self.crouching))
 
     def move(self):
-        speed = 8
+        speed = 10
         if pygame.key.get_pressed()[keys["crouch"]]:
             speed = 4
         if pygame.key.get_pressed()[keys["jump"]] and pygame.key.get_pressed()[keys["crouch"]]:
@@ -118,9 +123,19 @@ class Player:
         if pygame.key.get_pressed()[keys["left"]] and pygame.key.get_pressed()[keys["right"]]:
             self.vx = 0
         if pygame.key.get_pressed()[keys["jump"]] and self.jumping == False:
-            if self.vy == 0:
+            if self.crouching == 25 and self.vy == 0:
+                self.vy = self.jumpingpower + 70
+            elif self.vy == 0:
                 self.vy = self.jumpingpower
         
+class image:
+    def __init__(self, x, y, image):
+        self.x = x
+        self.y = y
+        self.image = image
+    
+    def draw(self):
+        screen.blit(self.image, (self.x, self.y))
 
 #keys
 
@@ -135,7 +150,7 @@ keys = {
 }
 
 player1 = Player("player1",100, variables["Ground _height"], 0, 0, "right")
-
+skibidi = image(100, 100, placeholder)
 #game loop
 
 run = True
@@ -150,9 +165,13 @@ while run:
     if pygame.key.get_pressed()[pygame.K_ESCAPE]:
         run = False
     
+    skibidi.draw()
+    
     player1.update()
     player1.draw()
     player1.move()
+
+    
 
     pygame.display.flip()
 
