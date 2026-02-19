@@ -4,7 +4,7 @@
 
 import pygame              # Moteur principal (fenêtre, events, images, sons)
 import cv2                 # OpenCV pour lire la vidéo (images uniquement)
-from Minigames import Minigame1, Minigame2, Minigame3  # Tes mini-jeux
+from Minigames import Minigame3  # Tes mini-jeux
 
 
 # =========================
@@ -273,9 +273,9 @@ def level_menu():
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 pos = mouse_screen_to_base(event.pos)
                 if r1.collidepoint(pos):
-                    Minigame1.start_mini_game1()
+                    from Minigames import Minigame1 
                 elif r2.collidepoint(pos):
-                    Minigame2.start_mini_game2()
+                    from Minigames import Minigame2
                 elif r3.collidepoint(pos):
                     Minigame3.start_mini_game3()
 
