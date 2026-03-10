@@ -1,3 +1,5 @@
+import time
+
 import pygame
 import math
 import sys
@@ -22,8 +24,10 @@ import sys
 # Initialisation Pygame
 pygame.init()
 
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+info = pygame.display.Info()
+WIDTH, HEIGHT = info.current_w, info.current_h
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 
 # Constantes physiques
@@ -36,13 +40,19 @@ DEPTH_FACTOR = 0.5
 BALL_IMG = pygame.image.load("assets/Minigame1.png").convert_alpha()
 TRASH_IMG = pygame.image.load("assets/Minigame1.png").convert_alpha()
 
-BALL_IMG = pygame.transform.scale(BALL_IMG, (24, 24))
-TRASH_IMG = pygame.transform.scale(TRASH_IMG, (150, 180))
+BALL_IMG = pygame.transform.scale(BALL_IMG, (35, 35))
+TRASH_IMG = pygame.transform.scale(TRASH_IMG, (180, 210))
+
+def draw_text(surface, text, size, color, x, y):
+    font = pygame.font.SysFont("Arial", size)
+    text_surface = font.render(text, True, color)
+    text_rect = text_surface.get_rect(center=(x, y))
+    surface.blit(text_surface, text_rect)
 
 def normalize_angle(angle):
-    while angle < -math.pi:
+    while angle < 0:
         angle += 2 * math.pi
-    while angle >= math.pi:
+    while angle >= 2 * math.pi:
         angle -= 2 * math.pi
     return angle
 
@@ -74,17 +84,24 @@ class Ball:
         self.is_moving = True
 
     def update(self, dt):
-        if self.is_moving:
-            self.vy += g * dt
+        if not self.is_moving:
+            return
 
-            self.x += self.vx * dt
-            self.y += self.vy * dt
-            self.z += self.vz * dt
+        self.vy += g * dt
 
-            if self.y > HEIGHT - 50:
-                self.is_moving = False
-                self.x, self.y, self.z = self.start_x, self.start_y, self.start_z
-                self.vx = self.vy = self.vz = 0.0
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        self.z += self.vz * dt
+
+        # Projection écran
+        screen_x = int(self.x + self.z * DEPTH_FACTOR)
+        screen_y = int(self.y - self.z * DEPTH_FACTOR)
+        self.rect.center = (screen_x, screen_y)
+
+        # Collision avec le sol (bas de l'écran)
+        if self.rect.bottom >= HEIGHT or self.rect.top <= 0 or self.rect.left <= 0 or self.rect.right >= WIDTH:
+            self.reset()
+
     
     def reset(self):
         self.x = self.start_x
@@ -109,44 +126,43 @@ class Trash:
         self.image = image
         self.x = x
         self.y = y
+
         self.rect = self.image.get_rect(bottomleft=(x, y))
+
         self.top_rect = pygame.Rect(
             self.rect.left,
             self.rect.top,
             self.rect.width,
-            10
-        )
-        self.top_rect_right = pygame.Rect(
-            self.rect.left,
-            self.rect.top,
-            self.rect.width,
-            10
-        )
-        self.top_rect_right = pygame.Rect(
-            self.rect.right,
-            self.rect.top,
-            self.rect.width - 10,
-            10
-        )
-        self.bot_rect = pygame.Rect(
-            self.rect.left,
-            self.rect.bottom ,
-            self.rect.width,
-            10
+            15  
         )
 
-    def draw(self, surface):
-        surface.blit(self.image, self.rect)
-        pygame.draw.rect(surface, (255, 0, 0,100), self.top_rect, 2)  # Dessiner la zone haute en rouge
+        self.body_rect = pygame.Rect(
+            self.rect.left,
+            self.rect.top + 15,
+            self.rect.width,
+            self.rect.height - 15
+        )
+
+
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)
+
+        # Haut en rouge
+        pygame.draw.rect(screen, (255, 0, 0), self.top_rect, 2)
+        # Corps en vert
+        pygame.draw.rect(screen, (0, 255, 0), self.body_rect, 2)
 
 ball = Ball(100, HEIGHT - 80, 0, BALL_IMG)
+trash_max = 2
+trash_1_count = 0
+trash_2_count = 0
+trash_3_count = 0
+# Create trash instances (keep references so we can compare/remove them)
+trash_1 = Trash(WIDTH - TRASH_IMG.get_width(), HEIGHT - 50, TRASH_IMG)
+trash_2 = Trash(WIDTH - TRASH_IMG.get_width() - 150, HEIGHT - 200, TRASH_IMG)
+trash_3 = Trash(WIDTH - TRASH_IMG.get_width() - 300, HEIGHT - 350, TRASH_IMG)
 
-# Position des poubelles 
-trash_list = [
-    Trash(150, HEIGHT - 300, TRASH_IMG),
-    Trash(350, HEIGHT - 300, TRASH_IMG),
-    Trash(550, HEIGHT - 300, TRASH_IMG),
-]
+trash_list = [trash_1, trash_2, trash_3]
 
 charging = False
 force = 0.0
@@ -198,7 +214,32 @@ while running:
     for trash in trash_list:
         trash.draw(screen)
         if ball.rect.colliderect(trash.top_rect):
-            print("La balle touche une poubelle !")
+            if trash is trash_1:
+                trash_1_count += 1
+            elif trash is trash_2:
+                trash_2_count += 1
+            elif trash is trash_3:
+                trash_3_count += 1
+
+            if trash_1_count > trash_max and trash_1 in trash_list:
+                draw_text(screen, "Poubelle 1 pleine !", 100, (255, 0, 0), WIDTH // 2, HEIGHT // 2)
+                pygame.display.flip()
+                time.sleep(1)  # Pause pour montrer le message
+                trash_list.remove(trash_1)
+            elif trash_2_count > trash_max and trash_2 in trash_list:
+                draw_text(screen, "Poubelle 2 pleine !", 100, (255, 0, 0), WIDTH // 2, HEIGHT // 2)
+                pygame.display.flip()
+                time.sleep(1)  # Pause pour montrer le message
+                trash_list.remove(trash_2)
+            elif trash_3_count > trash_max and trash_3 in trash_list:
+                draw_text(screen, "Poubelle 3 pleine !", 100, (255, 0, 0), WIDTH // 2, HEIGHT // 2)
+                pygame.display.flip()
+                time.sleep(1)  # Pause pour montrer le message
+                trash_list.remove(trash_3)
+
+            draw_text(screen, "La balle touche une poubelle !", 100, (255, 255, 0), WIDTH // 2, HEIGHT // 2 + 50)
+            pygame.display.flip()
+            time.sleep(1)  # Pause pour montrer le message
             ball.reset()
     ball.update(dt)
     ball.draw(screen)
