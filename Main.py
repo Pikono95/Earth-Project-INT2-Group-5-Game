@@ -293,7 +293,7 @@ def level_menu():
     pygame.mixer.music.set_volume(1.0)
 
     # Background
-    background_level = pygame.image.load("Assets/bg_for_menu.png").convert()
+    background_level = pygame.image.load("Assets/background_lvl.png").convert()
     background_level = pygame.transform.scale(background_level, (BASE_W, BASE_H))
 
     # Images des mini-jeux
