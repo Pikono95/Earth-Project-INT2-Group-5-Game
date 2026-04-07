@@ -70,6 +70,47 @@ def scale_image(img, s):
     return pygame.transform.smoothscale(img, (w, h))
 
 
+PIXEL_FONT = {
+    "0": [" xxx ", "x   x", "x  xx", "x x x", "xx  x", "x   x", " xxx "],
+    "1": ["  x  ", " xx  ", "x x  ", "  x  ", "  x  ", "  x  ", "xxxxx"],
+    "2": [" xxx ", "x   x", "    x", "   x ", "  x  ", " x   ", "xxxxx"],
+    "3": [" xxx ", "x   x", "    x", "  xx ", "    x", "x   x", " xxx "],
+    "4": ["   x ", "  xx ", " x x ", "x  x ", "xxxxx", "   x ", "   x "],
+    "5": ["xxxxx", "x    ", "xxxx ", "    x", "    x", "x   x", " xxx "],
+    "6": [" xxx ", "x    ", "x    ", "xxxx ", "x   x", "x   x", " xxx "],
+    "7": ["xxxxx", "    x", "   x ", "  x  ", " x   ", " x   ", " x   "],
+    "8": [" xxx ", "x   x", "x   x", " xxx ", "x   x", "x   x", " xxx "],
+    "9": [" xxx ", "x   x", "x   x", " xxxx", "    x", "    x", " xxx "],
+    "S": [" xxx ", "x   x", "x    ", " xxx ", "    x", "x   x", " xxx "],
+    "C": [" xxx ", "x   x", "x    ", "x    ", "x    ", "x   x", " xxx "],
+    "O": [" xxx ", "x   x", "x   x", "x   x", "x   x", "x   x", " xxx "],
+    "R": ["xxxx ", "x   x", "x   x", "xxxx ", "x  x ", "x   x", "x   x"],
+    "E": ["xxxxx", "x    ", "x    ", "xxxx ", "x    ", "x    ", "xxxxx"],
+    ":": ["     ", "  x  ", "     ", "     ", "  x  ", "     ", "     "],
+    " ": ["     ", "     ", "     ", "     ", "     ", "     ", "     "]
+}
+
+
+def render_pixel_text(text, pixel_size=8, color=(255, 255, 255), spacing=2):
+    """Crée une surface contenant du texte en style pixel art."""
+    text = text.upper()
+    patterns = [PIXEL_FONT.get(ch, PIXEL_FONT[" "]) for ch in text]
+    char_width = len(patterns[0][0]) if patterns else 0
+    height = len(patterns[0]) * pixel_size if patterns else 0
+    width = sum(len(pattern[0]) for pattern in patterns) * pixel_size + max(0, len(patterns) - 1) * spacing
+
+    surface = pygame.Surface((width, height), pygame.SRCALPHA)
+    x = 0
+    for pattern in patterns:
+        for y, row in enumerate(pattern):
+            for col, pixel in enumerate(row):
+                if pixel != " ":
+                    surface.fill(color, (x + col * pixel_size, y * pixel_size, pixel_size, pixel_size))
+        x += len(pattern[0]) * pixel_size + spacing
+
+    return surface
+
+
 # =========================
 # LECTURE DE LA VIDÉO
 # =========================
@@ -244,24 +285,28 @@ def start_menu():
 def level_menu():
     canvas = pygame.Surface((BASE_W, BASE_H)).convert()
 
+    score = 0 
+
     # Musique du jeu
     pygame.mixer.music.load("Assets/Game music.mp3")
     pygame.mixer.music.play(-1)
     pygame.mixer.music.set_volume(1.0)
 
     # Background
-    background_level = pygame.image.load("Assets/house.png").convert()
+    background_level = pygame.image.load("Assets/bg_for_menu.png").convert()
     background_level = pygame.transform.scale(background_level, (BASE_W, BASE_H))
 
     # Images des mini-jeux
-    minigame_1 = pygame.image.load("Assets/Minigame1.png").convert_alpha()
-    minigame_2 = pygame.image.load("Assets/Minigame2.png").convert_alpha()
-    minigame_3 = pygame.image.load("Assets/Minigame3.png").convert_alpha()
+    minigame_1 = pygame.image.load("Assets/for dors.png").convert_alpha()
+    minigame_2 = pygame.image.load("Assets/for dors.png").convert_alpha()
+    minigame_3 = pygame.image.load("Assets/for dors.png").convert_alpha()
+    quit_img = pygame.image.load("Assets/Quit.png").convert_alpha()
 
     # Positions
-    r1 = minigame_1.get_rect(topleft=(200, 400))
-    r2 = minigame_2.get_rect(topleft=(800, 400))
-    r3 = minigame_3.get_rect(topleft=(1300, 400))
+    r1 = minigame_1.get_rect(topleft=(475, 400))
+    r2 = minigame_2.get_rect(topleft=(900, 400))
+    r3 = minigame_3.get_rect(topleft=(75, 400))
+    r4 = quit_img.get_rect(topleft=(1700, 50))
 
     running = True
     while running:
@@ -278,16 +323,24 @@ def level_menu():
                     from Minigames import Minigame2
                 elif r3.collidepoint(pos):
                     Minigame3.start_mini_game3()
+                elif r4.collidepoint(pos):
+                    running = False
 
         canvas.fill((0, 0, 0))
-        font = pygame.font.Font(None, 74)
-        title = font.render("Choose a level", True, (255, 255, 255))
-        canvas.blit(title, (740, 120))
-
         canvas.blit(background_level, (0, 0))
+
+        font = pygame.font.Font(None, 74)
+
+        # shows score with pixel art style
+        score_label = render_pixel_text("SCORE:", pixel_size=8, color=(255, 255, 255), spacing=2)
+        score_digits = render_pixel_text(str(score), pixel_size=8, color=(255, 255, 255), spacing=2)
+        canvas.blit(score_label, (50, 50))
+        canvas.blit(score_digits, (50 + score_label.get_width() + 10, 50))
+
         canvas.blit(minigame_1, r1)
         canvas.blit(minigame_2, r2)
         canvas.blit(minigame_3, r3)
+        canvas.blit(quit_img, r4)
 
         scale, off_x, off_y = compute_scale_and_offset()
         canvas_scaled = pygame.transform.smoothscale(
@@ -300,6 +353,18 @@ def level_menu():
         pygame.display.flip()
         clock.tick(60)
 
+def result (score):
+    if score < 500:
+        #BAD
+        play_video("Assets/placehordler.mp4", "Assets/test music.mp3")
+    elif score < 1000:
+        #MID
+        play_video("Assets/placehordler.mp4", "Assets/test music.mp3")
+    else:
+        #WIN
+        play_video("Assets/placehordler.mp4", "Assets/test music.mp3")
+
+
 
 # =========================
 # FLUX PRINCIPAL
@@ -308,6 +373,7 @@ def level_menu():
 def main():
     # Menu principal
     start = start_menu()
+    score = 0  
 
     if not start:
         pygame.mixer.music.stop()
@@ -320,6 +386,9 @@ def main():
 
     # Menu de sélection des niveaux
     level_menu()
+
+    # Résultat final
+    result(score)
 
     pygame.quit()
 
