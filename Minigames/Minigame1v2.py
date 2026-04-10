@@ -8,8 +8,8 @@ WIDTH, HEIGHT = 1000, 500
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Skibidi fighter prototype")
 clock = pygame.time.Clock()
+font = pygame.font.SysFont(None, 24)
 
-placeholder = pygame.image.load("Assets\\images.png")
 
 variables = {
     "Gravity" : 1,
@@ -18,53 +18,71 @@ variables = {
 
 }
 
-projectiles = []
+class Enemy:
 
-class Projectile:
-    def __init__(self,x,y,vx,vy,direction):
-        self.x = x
-        self.y = y
-        self.vx = vx
+    def __init__(self,x=None,y=None,vx=None,vy=0,facing="horizontal"):
+        y_min = variables["Ground _height"] - 120
+        y_max = variables["Ground _height"] - 30
+        self.y = random.randint(y_min, y_max) if y is None else y
+        self.color = (random.randint(100,255), random.randint(100,255), random.randint(100,255))
+        if x is None:
+            if random.choice([True, False]):
+                self.x = -30
+                self.vx = 5
+            else:
+                self.x = WIDTH
+                self.vx = -5
+        else:
+            self.x = x
+            self.vx = vx if vx is not None else 5
         self.vy = vy
-        self.direction = direction
+        self.facing = facing
     
     def update(self):
-        self.x += self.vx * self.direction
-        
-        self.y += self.vy
-
+        self.x += self.vx
+        if self.x < -30 or self.x > WIDTH:
+            return True
+        return False
+    
     def draw(self):
-        pygame.draw.circle(screen, (255, 0, 0), (int(self.x), int(self.y)), 5)
+        can_x = self.x
+        can_y = self.y - 50
+        pygame.draw.rect(screen, (120, 120, 120), (can_x, can_y + 10, 30, 40))
+        pygame.draw.rect(screen, (160, 160, 160), (can_x - 4, can_y, 38, 10))
+        pygame.draw.line(screen, (80, 80, 80), (can_x + 8, can_y + 15), (can_x + 8, can_y + 45), 2)
+        pygame.draw.line(screen, (80, 80, 80), (can_x + 16, can_y + 15), (can_x + 16, can_y + 45), 2)
+        pygame.draw.line(screen, (80, 80, 80), (can_x + 24, can_y + 15), (can_x + 24, can_y + 45), 2)
 
-#particule system
-particles = []
-class Particle:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-        self.vx = random.uniform(-2, 2)
-        self.vy = random.uniform(-2, 0)
-        self.life = 20
+class Goop:
+
+    def __init__(self, player_x=None):
+        if player_x is None:
+            self.x = random.randint(0, WIDTH - 30)
+        else:
+            offset = random.randint(-200, 200)
+            self.x = max(0, min(WIDTH - 30, player_x + offset))
+        self.y = random.randint(-200, -60)
+        self.vy = random.randint(5, 8)
+        self.color = (30, 180, 30)
 
     def update(self):
-        self.x += self.vx
         self.y += self.vy
-        
-        self.life -= 1
+        if self.y > HEIGHT:
+            return True
+        return False
 
     def draw(self):
-        if self.life > 0:
-            pygame.draw.circle(screen, (255, 255, 255), (int(self.x), int(self.y)), 3)
+        pygame.draw.circle(screen, self.color, (self.x + 15, self.y - 25), 15)
 
 class Player: 
 
-    def __init__(self,person,x,y,vx,vy,facing):
+    def __init__(self,x,y,vx,vy,facing):
         self.x = x
         self.y = y
         self.vx = vx
         self.vy = vy
         self.facing = facing
-        self.person = person
+        self.health = 100
     
     def update(self):
         self.x += self.vx
@@ -80,7 +98,7 @@ class Player:
         else:
             self.vy = 0
             self.jumping = False
-        self.vx *= 0.7
+        self.vx *= 0.8
         if self.vx < 1 and self.vx > -1:
             self.vx = 0
 
@@ -127,36 +145,98 @@ class Player:
                 self.vy = self.jumpingpower + 70
             elif self.vy == 0:
                 self.vy = self.jumpingpower
-        
-class image:
-    def __init__(self, x, y, image):
-        self.x = x
-        self.y = y
-        self.image = image
     
+    def update(self):
+        self.x += self.vx
+        self.y += self.vy
+        self.jumpingpower = -20
+        if self.y < variables["Ground _height"]:
+            self.jumping = True
+            self.vy += variables["Gravity"]
+        elif self.y > variables["Ground _height"]:
+            self.y = variables["Ground _height"]
+            self.vy = 0
+            self.jumping = False
+        else:
+            self.vy = 0
+            self.jumping = False
+        self.vx *= 0.6
+        if self.vx < 1 and self.vx > -1:
+            self.vx = 0
+
+
+        if self.x == 0 or self.x == WIDTH - 30:
+            self.vx = -self.vx
+        
+        if self.x < 0:
+            self.x = 0
+        elif self.x > WIDTH - 30:
+            self.x = WIDTH - 30
+        if pygame.key.get_pressed()[keys["crouch"]]:
+            self.crouching = 25
+            if self.jumping == True and self.vy < 0:
+                self.vy = 40
+            else:
+                self.jumpingpower = -40
+                self.jumping = False
+        else:
+            self.crouching = 0
+
+
+        
+
     def draw(self):
-        screen.blit(self.image, (self.x, self.y))
+        pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y - 50 + self.crouching, 30, 50 - self.crouching))
 
-#keys
-
+    def move(self):
+        speed = 10
+        if pygame.key.get_pressed()[keys["crouch"]]:
+            speed = 4
+        if pygame.key.get_pressed()[keys["jump"]] and pygame.key.get_pressed()[keys["crouch"]]:
+            self.jumping = False
+        if pygame.key.get_pressed()[keys["left"]]:
+            self.vx = -speed
+            self.facing = "left"
+        if pygame.key.get_pressed()[keys["right"]]:
+            self.vx = speed
+            self.facing = "right"
+        if pygame.key.get_pressed()[keys["left"]] and pygame.key.get_pressed()[keys["right"]]:
+            self.vx = 0
+        if pygame.key.get_pressed()[keys["jump"]] and self.jumping == False:
+            if self.crouching == 25 and self.vy == 0:
+                self.vy = self.jumpingpower + 70
+            elif self.vy == 0:
+                self.vy = self.jumpingpower
 keys = {
     "left" : pygame.K_q,
     "right" : pygame.K_d,
     "jump" : pygame.K_z,
     "crouch" : pygame.K_s,
-    "shoot" : pygame.K_f,
-    "punch" : pygame.K_r,
-    "kick" : pygame.K_e,
 }
 
-player1 = Player("player1",100, variables["Ground _height"], 0, 0, "right")
-skibidi = image(100, 100, placeholder)
-#game loop
+def reset_game():
+    global player1, enemies, spawn_timer, goop_timer, timer_ms, game_over, won
+    player1 = Player(100, variables["Ground _height"], 0, 0, "right")
+    enemies = []
+    spawn_timer = 0
+    goop_timer = 0
+    timer_ms = 20000
+    game_over = False
+    won = False
+
+player1 = Player(100, variables["Ground _height"], 0, 0, "right")
+enemies = []
+spawn_timer = 0
+goop_timer = 0
+timer_ms = 20000
+game_over = False
+won = False
 
 run = True
 while run:
-    clock.tick(60)
+    dt = clock.tick(60)
     screen.fill(variables["sky color"])
+    pygame.draw.rect(screen, (80, 180, 60), (0, variables["Ground _height"], WIDTH, HEIGHT - variables["Ground _height"]))
     
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -165,13 +245,65 @@ while run:
     if pygame.key.get_pressed()[pygame.K_ESCAPE]:
         run = False
     
-    skibidi.draw()
+    if game_over or won:
+        if won:
+            status_text = font.render("YOU WIN!", True, (0, 255, 0))
+        else:
+            status_text = font.render("GAME OVER", True, (255, 0, 0))
+        restart_text = font.render("Press R to restart", True, (255, 255, 255))
+        screen.blit(status_text, (WIDTH // 2 - status_text.get_width() // 2, HEIGHT // 2 - 30))
+        screen.blit(restart_text, (WIDTH // 2 - restart_text.get_width() // 2, HEIGHT // 2 + 10))
+        if pygame.key.get_pressed()[pygame.K_r]:
+            reset_game()
+        pygame.display.flip()
+        continue
+    
+    timer_ms -= dt
+    if timer_ms <= 0:
+        timer_ms = 0
+        won = True
+    
+    spawn_timer += 1
+    goop_timer += 1
+    if goop_timer > 120 and len(enemies) < 6:
+        enemies.append(Goop(player1.x))
+        goop_timer = 0
+    elif spawn_timer > 50 and len(enemies) < 6:
+        enemies.append(Enemy())
+        spawn_timer = 0
     
     player1.update()
     player1.draw()
     player1.move()
 
-    
+    for enemy in enemies[:]:
+        if enemy.update():
+            enemies.remove(enemy)
+        else:
+            enemy.draw()
+            player_rect = pygame.Rect(player1.x, player1.y - 50 + player1.crouching, 30, 50 - player1.crouching)
+            enemy_rect = pygame.Rect(enemy.x, enemy.y - 50, 30, 50)
+            if player_rect.colliderect(enemy_rect):
+                player1.health -= 10
+                enemies.remove(enemy)
+
+    if player1.health <= 0:
+        player1.health = 0
+        game_over = True
+
+    timer_text = font.render(f"Time: {timer_ms // 1000}", True, (255, 255, 255))
+    screen.blit(timer_text, (WIDTH - timer_text.get_width() - 10, 10))
+
+    bar_x, bar_y = 10, 10
+    bar_width = 200
+    bar_height = 20
+    pygame.draw.rect(screen, (0, 0, 0), (bar_x, bar_y, bar_width + 2, bar_height + 2), 2)
+    health_ratio = player1.health / 100
+    pygame.draw.rect(screen, (0, 255, 0), (bar_x + 1, bar_y + 1, bar_width * health_ratio, bar_height))
+    health_text = font.render(f"{player1.health}/100", True, (255, 255, 255))
+    text_x = bar_x + bar_width // 2 - health_text.get_width() // 2
+    text_y = bar_y + bar_height // 2 - health_text.get_height() // 2
+    screen.blit(health_text, (text_x, text_y))
 
     pygame.display.flip()
 
