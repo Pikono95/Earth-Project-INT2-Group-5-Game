@@ -124,6 +124,6 @@ Earth-Project-INT2-Group-5-Game/
 
 ## Credits
 
-- **Developers**: Group 5, INT2 Class
+- **Developers**: Group 5, INT2 Class P1 EFREI
 - **Libraries**: Pygame, OpenCV, NumPy
 - **Assets**: Custom created for the project
