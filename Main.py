@@ -322,9 +322,8 @@ def level_menu():
                     from Minigames import Minigame2
                 elif r3.collidepoint(pos):
                     Minigame3.start_mini_game3()
-                elif r4.collidepoint(pos):
-                    running = False
-
+                elif r5.collidepoint(pos):
+                    from Minigames import Minigame4
         canvas.fill((0, 0, 0))
         canvas.blit(background_level, (0, 0))
 
@@ -364,13 +363,13 @@ def update_score(points):
 def result (score):
     if score < 500:
         # BAD
-        play_video("Assets/placehordler.mp4", "Assets/test music.mp3")
+        play_video("Assets/Defeat.mp4", "Assets/Defeat.mp3")
     elif score < 1000:
         # MID
-        play_video("Assets/placehordler.mp4", "Assets/test music.mp3")
+        play_video("Assets/Almost.mp4", "Assets/Almost.mp3")
     else:
         # WIN
-        play_video("Assets/placehordler.mp4", "Assets/test music.mp3")
+        play_video("Assets/Victory.mp4", "Assets/Victory.mp3")
 
 
 
