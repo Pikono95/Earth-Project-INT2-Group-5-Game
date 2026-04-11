@@ -2,46 +2,46 @@
 # IMPORTS
 # =========================
 
-import pygame              # Moteur principal (fenêtre, events, images, sons)
-import cv2                 # OpenCV pour lire la vidéo (images uniquement)
-from Minigames import Minigame3  # Tes mini-jeux
+import pygame              # Main engine (window, events, images, sounds)
+import cv2                 # OpenCV to read video (images only)
+from Minigames import Minigame3  # Mini-games
 
 
 # =========================
 # INITIALISATION
 # =========================
 
-pygame.init()              # Initialise tous les modules pygame
-pygame.mixer.init()        # Initialise le système audio
+pygame.init()              # Initialize all pygame modules
+pygame.mixer.init()        # Initialize audio system
 
 
 # =========================
-# CONSTANTES
+# CONSTANTS
 # =========================
 
-BASE_W, BASE_H = 1920, 1080    # Résolution logique du jeu
-HOVER_SCALE = 1.08             # Facteur d’agrandissement au survol des boutons
+BASE_W, BASE_H = 1920, 1080    # Game logical resolution
+HOVER_SCALE = 1.08             # Button hover scaling factor
 
 
 # =========================
-# FENÊTRE PRINCIPALE
+# MAIN WINDOW
 # =========================
 
-# Fenêtre fullscreen native (taille écran réelle)
+# Native fullscreen window (actual screen size)
 window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-clock = pygame.time.Clock()    # Pour limiter les FPS
+clock = pygame.time.Clock()    # To limit FPS
 
 
 # =========================
-# OUTILS DE MISE À L’ÉCHELLE
+# SCALING TOOLS
 # =========================
 
 def compute_scale_and_offset():
     """
-    Calcule :
-    - scale : facteur d’échelle entre la résolution logique (1920x1080)
-              et la fenêtre réelle
-    - off_x / off_y : bandes noires (letterbox)
+    Computes:
+    - scale: scale factor between logical resolution (1920x1080)
+             and actual window
+    - off_x / off_y: black bars (letterbox)
     """
     ww, wh = window.get_size()
     scale = min(ww / BASE_W, wh / BASE_H)
@@ -52,8 +52,8 @@ def compute_scale_and_offset():
 
 def mouse_screen_to_base(mouse_pos):
     """
-    Convertit la position de la souris (écran réel)
-    en coordonnées logiques (1920x1080)
+    Converts mouse position (actual screen)
+    to logical coordinates (1920x1080)
     """
     scale, off_x, off_y = compute_scale_and_offset()
     mx, my = mouse_pos
@@ -62,8 +62,8 @@ def mouse_screen_to_base(mouse_pos):
 
 def scale_image(img, s):
     """
-    Redimensionne une image avec un facteur s
-    (utilisé pour l’animation hover)
+    Scales an image by factor s
+    (used for hover animation)
     """
     w = max(1, int(img.get_width() * s))
     h = max(1, int(img.get_height() * s))
@@ -92,7 +92,7 @@ PIXEL_FONT = {
 
 
 def render_pixel_text(text, pixel_size=8, color=(255, 255, 255), spacing=2):
-    """Crée une surface contenant du texte en style pixel art."""
+    """Creates a surface containing pixel art style text."""
     text = text.upper()
     patterns = [PIXEL_FONT.get(ch, PIXEL_FONT[" "]) for ch in text]
     char_width = len(patterns[0][0]) if patterns else 0
@@ -112,75 +112,75 @@ def render_pixel_text(text, pixel_size=8, color=(255, 255, 255), spacing=2):
 
 
 # =========================
-# LECTURE DE LA VIDÉO
+# VIDEO PLAYBACK
 # =========================
 
 def play_video(video_path, audio_path=None):
     """
-    Joue une vidéo avec OpenCV.
-    Si audio_path est fourni, joue l’audio avec pygame en parallèle.
+    Plays a video with OpenCV.
+    If audio_path is provided, plays audio with pygame in parallel.
     """
 
-    # Lance l’audio si présent
+    # Start audio if present
     if audio_path is not None:
         pygame.mixer.music.load(audio_path)
-        pygame.mixer.music.play()        # Une seule fois
+        pygame.mixer.music.play()        # Once only
         pygame.mixer.music.set_volume(1.0)
 
-    # Ouvre la vidéo
+    # Open the video
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        print("Erreur: impossible d'ouvrir la vidéo:", video_path)
+        print("Error: Unable to open video:", video_path)
         if audio_path is not None:
             pygame.mixer.music.stop()
         return
 
-    # Récupère les FPS de la vidéo
+    # Get video FPS
     fps = cap.get(cv2.CAP_PROP_FPS)
     if fps <= 0:
         fps = 30
 
     running_video = True
     while running_video:
-        # Gestion des événements (skip possible)
+        # Event handling (skip possible)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running_video = False
             if event.type == pygame.KEYDOWN:
-                running_video = False  # Appuyer sur une touche = skip
+                running_video = False  # Press any key = skip
 
-        # Lecture d’une frame
+        # Read a frame
         ret, frame = cap.read()
         if not ret:
-            break  # Fin de la vidéo
+            break  # End of video
 
-        # Conversion OpenCV (BGR) -> Pygame (RGB)
+        # Convert OpenCV (BGR) -> Pygame (RGB)
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         frame_surf = pygame.surfarray.make_surface(frame.swapaxes(0, 1))
 
-        # Mise à l’échelle plein écran
+        # Fullscreen scaling
         frame_surf = pygame.transform.scale(frame_surf, window.get_size())
 
-        # Affichage
+        # Display
         window.blit(frame_surf, (0, 0))
         pygame.display.flip()
         clock.tick(fps)
 
     cap.release()
 
-    # Stop l’audio à la fin de la vidéo
+    # Stop audio at end of video
     if audio_path is not None:
         pygame.mixer.music.stop()
 
 
 # =========================
-# MENU PRINCIPAL (START / QUIT)
+# MAIN MENU (START / QUIT)
 # =========================
 
 def start_menu():
     canvas = pygame.Surface((BASE_W, BASE_H)).convert()
 
-    # Musique d’intro
+    # Intro music
     pygame.mixer.music.load("Assets/Test music.mp3")
     pygame.mixer.music.play(-1)
     pygame.mixer.music.set_volume(1.0)
@@ -189,19 +189,19 @@ def start_menu():
     background = pygame.image.load("Assets/Background.png").convert()
     background = pygame.transform.scale(background, (BASE_W, BASE_H))
 
-    # Boutons
+    # Buttons
     play_img0 = pygame.image.load("Assets/Start_button.png").convert_alpha()
     quit_img0 = pygame.image.load("Assets/Quit_button.png").convert_alpha()
 
-    # Position centrale des boutons
+    # Center position of buttons
     play_center = (BASE_W // 2, BASE_H // 2)
     quit_center = (BASE_W // 2, BASE_H // 2 + 150)
 
-    # Bounding box réelle (sans transparence)
+    # Real bounding box (without transparency)
     play_bbox0 = play_img0.get_bounding_rect()
     quit_bbox0 = quit_img0.get_bounding_rect()
 
-    # Décalage entre centre image et centre bbox
+    # Offset between image center and bbox center
     play_off = (
         play_bbox0.centerx - play_img0.get_rect().centerx,
         play_bbox0.centery - play_img0.get_rect().centery
@@ -211,7 +211,7 @@ def start_menu():
         quit_bbox0.centery - quit_img0.get_rect().centery
     )
 
-    # Hitbox initiale
+    # Initial hitbox
     play_hit = pygame.Rect(0, 0, play_bbox0.w, play_bbox0.h)
     quit_hit = pygame.Rect(0, 0, quit_bbox0.w, quit_bbox0.h)
 
@@ -219,7 +219,7 @@ def start_menu():
     quit_hit.center = (quit_center[0] + quit_off[0], quit_center[1] + quit_off[1])
 
     while True:
-        # Détection du hover
+        # Hover detection
         mouse_base = mouse_screen_to_base(pygame.mouse.get_pos())
         hover_play = play_hit.collidepoint(mouse_base)
         hover_quit = quit_hit.collidepoint(mouse_base)
@@ -237,7 +237,7 @@ def start_menu():
                 if quit_hit.collidepoint(pos):
                     return False
 
-        # Animation hover
+        # Hover animation
         play_scale = HOVER_SCALE if hover_play else 1.0
         quit_scale = HOVER_SCALE if hover_quit else 1.0
 
@@ -247,7 +247,7 @@ def start_menu():
         play_rect = play_img.get_rect(center=play_center)
         quit_rect = quit_img.get_rect(center=quit_center)
 
-        # Mise à jour des hitbox avec le scale
+        # Update hitboxes with scale
         play_hit = pygame.Rect(0, 0, int(play_bbox0.w * play_scale), int(play_bbox0.h * play_scale))
         quit_hit = pygame.Rect(0, 0, int(quit_bbox0.w * quit_scale), int(quit_bbox0.h * quit_scale))
 
@@ -260,12 +260,12 @@ def start_menu():
             int(quit_center[1] + quit_off[1] * quit_scale)
         )
 
-        # Dessin
+        # Drawing
         canvas.blit(background, (0, 0))
         canvas.blit(play_img, play_rect)
         canvas.blit(quit_img, quit_rect)
 
-        # Canvas -> écran réel
+        # Canvas -> actual screen
         scale, off_x, off_y = compute_scale_and_offset()
         canvas_scaled = pygame.transform.smoothscale(
             canvas, (int(BASE_W * scale), int(BASE_H * scale))
@@ -279,13 +279,13 @@ def start_menu():
 
 
 # =========================
-# MENU DES NIVEAUX
+# LEVEL MENU
 # =========================
 
 def level_menu():
     canvas = pygame.Surface((BASE_W, BASE_H)).convert()
 
-    # Musique du jeu
+    # Game music
     pygame.mixer.music.load("Assets/Game music.mp3")
     pygame.mixer.music.play(-1)
     pygame.mixer.music.set_volume(1.0)
@@ -294,17 +294,17 @@ def level_menu():
     background_level = pygame.image.load("Assets/background_lvl.png").convert()
     background_level = pygame.transform.scale(background_level, (BASE_W, BASE_H))
 
-    # Images des mini-jeux
+    # Mini game images
     minigame_1 = pygame.image.load("Assets/for dors.png").convert_alpha()
     minigame_2 = pygame.image.load("Assets/for dors.png").convert_alpha()
     minigame_3 = pygame.image.load("Assets/for dors.png").convert_alpha()
-    quit_img = pygame.image.load("Assets/Quit.png").convert_alpha()
+    minigame_4 = pygame.image.load("Assets/for dors.png").convert_alpha()
 
     # Positions
     r1 = minigame_1.get_rect(topleft=(550, 200))
     r2 = minigame_2.get_rect(topleft=(1050, 200))
     r3 = minigame_3.get_rect(topleft=(75, 200))
-    r4 = quit_img.get_rect(topleft=(1700, 50))
+    r5 = minigame_4.get_rect(topleft=(1450, 200))
 
     running = True
     while running:
@@ -316,7 +316,8 @@ def level_menu():
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 pos = mouse_screen_to_base(event.pos)
                 if r1.collidepoint(pos):
-                    from Minigames import Minigame1 
+                    from Minigames import Minigame1v2
+                    Minigame1v2.start_mini_game1v2()
                 elif r2.collidepoint(pos):
                     from Minigames import Minigame2
                 elif r3.collidepoint(pos):
@@ -338,7 +339,7 @@ def level_menu():
         canvas.blit(minigame_1, r1)
         canvas.blit(minigame_2, r2)
         canvas.blit(minigame_3, r3)
-        canvas.blit(quit_img, r4)
+        canvas.blit(minigame_4, r5)
 
         scale, off_x, off_y = compute_scale_and_offset()
         canvas_scaled = pygame.transform.smoothscale(
@@ -362,23 +363,23 @@ def update_score(points):
 
 def result (score):
     if score < 500:
-        #BAD
+        # BAD
         play_video("Assets/placehordler.mp4", "Assets/test music.mp3")
     elif score < 1000:
-        #MID
+        # MID
         play_video("Assets/placehordler.mp4", "Assets/test music.mp3")
     else:
-        #WIN
+        # WIN
         play_video("Assets/placehordler.mp4", "Assets/test music.mp3")
 
 
 
 # =========================
-# FLUX PRINCIPAL
+# MAIN FLOW
 # =========================
 
 def main():
-    # Menu principal
+    # Main menu
     start = start_menu()
     score = 0  
 
@@ -387,14 +388,14 @@ def main():
         pygame.quit()
         return
 
-    # Vidéo d’intro avec audio
+    # Intro video with audio
     pygame.mixer.music.stop()
     play_video("Assets/video_intro.mp4", "Assets/video_audio.mp3")
 
-    # Menu de sélection des niveaux
+    # Level selection menu
     level_menu()
 
-    # Résultat final
+    # Final result
     result(score)
 
     pygame.quit()

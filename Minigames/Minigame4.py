@@ -70,11 +70,11 @@ class Bubble:
 #to be done: implement popups in assets and redirect the button image loader to them (pygame.image.load(filename))
 
 buttons = [
-    Bubble(button_img, pos=(970, 165), popup_im=pygame.image.load("../Assets/trash_info.png").convert_alpha()), # plastic bottles info button
-    Bubble(button_img, pos=(1000, 300), popup_im=pygame.image.load("../Assets/trash_info.png").convert_alpha()), # fridge info button
-    Bubble(button_img, pos=(700, 320), popup_im=pygame.image.load("../Assets/trash_info.png").convert_alpha()), # sink info button
-    Bubble(button_img, pos=(480, 450), popup_im=pygame.image.load("../Assets/trash_info.png").convert_alpha()), # trash info button
-    Bubble(button_img, pos=(690, 160), popup_im=pygame.image.load("../Assets/light_info.png").convert_alpha()), # overhead light info button
+    Bubble(button_img, pos=(970, 165), popup_im=pygame.image.load(ASSETS_DIR / "trash_info.png").convert_alpha()), # plastic bottles info button
+    Bubble(button_img, pos=(1000, 300), popup_im=pygame.image.load(ASSETS_DIR / "trash_info.png").convert_alpha()), # fridge info button
+    Bubble(button_img, pos=(700, 320), popup_im=pygame.image.load(ASSETS_DIR / "trash_info.png").convert_alpha()), # sink info button
+    Bubble(button_img, pos=(480, 450), popup_im=pygame.image.load(ASSETS_DIR / "trash_info.png").convert_alpha()), # trash info button
+    Bubble(button_img, pos=(690, 160), popup_im=pygame.image.load(ASSETS_DIR / "light_info.png").convert_alpha()), # overhead light info button
 ]
 
 

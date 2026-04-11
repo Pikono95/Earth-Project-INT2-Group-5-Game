@@ -1,13 +1,13 @@
 import pygame
 import sys
 import random
+from Main import update_score
 
 pygame.init()
 
 WIDTH, HEIGHT = 1000, 500
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Skibidi fighter prototype")
-clock = pygame.time.Clock()
+screen = None
+clock = None
 font = pygame.font.SysFont(None, 24)
 
 
@@ -224,88 +224,108 @@ def reset_game():
     game_over = False
     won = False
 
-player1 = Player(100, variables["Ground _height"], 0, 0, "right")
-enemies = []
-spawn_timer = 0
-goop_timer = 0
-timer_ms = 20000
-game_over = False
-won = False
+def start_mini_game1v2():
+    global screen, clock, player1, enemies, spawn_timer, goop_timer, timer_ms, game_over, won, end_time
 
-run = True
-while run:
-    dt = clock.tick(60)
-    screen.fill(variables["sky color"])
-    pygame.draw.rect(screen, (80, 180, 60), (0, variables["Ground _height"], WIDTH, HEIGHT - variables["Ground _height"]))
-    
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+    clock = pygame.time.Clock()
+    player1 = Player(100, variables["Ground _height"], 0, 0, "right")
+    enemies = []
+    spawn_timer = 0
+    goop_timer = 0
+    timer_ms = 20000
+    game_over = False
+    won = False
+    end_time = None
+    run = True
+
+    while run:
+        dt = clock.tick(60)
+        screen.fill(variables["sky color"])
+        pygame.draw.rect(screen, (80, 180, 60), (0, variables["Ground _height"], WIDTH, HEIGHT - variables["Ground _height"]))
+        health_ratio = player1.health / 100
+        
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+
+        if pygame.key.get_pressed()[pygame.K_ESCAPE]:
             run = False
+        
+        if game_over or won:
+            if end_time is None:
+                end_time = pygame.time.get_ticks()
 
-    if pygame.key.get_pressed()[pygame.K_ESCAPE]:
-        run = False
-    
-    if game_over or won:
-        if won:
-            status_text = font.render("YOU WIN!", True, (0, 255, 0))
-        else:
-            status_text = font.render("GAME OVER", True, (255, 0, 0))
-        restart_text = font.render("Press R to restart", True, (255, 255, 255))
-        screen.blit(status_text, (WIDTH // 2 - status_text.get_width() // 2, HEIGHT // 2 - 30))
-        screen.blit(restart_text, (WIDTH // 2 - restart_text.get_width() // 2, HEIGHT // 2 + 10))
-        if pygame.key.get_pressed()[pygame.K_r]:
-            reset_game()
-        pygame.display.flip()
-        continue
-    
-    timer_ms -= dt
-    if timer_ms <= 0:
-        timer_ms = 0
-        won = True
-    
-    spawn_timer += 1
-    goop_timer += 1
-    if goop_timer > 120 and len(enemies) < 6:
-        enemies.append(Goop(player1.x))
-        goop_timer = 0
-    elif spawn_timer > 50 and len(enemies) < 6:
-        enemies.append(Enemy())
-        spawn_timer = 0
-    
-    player1.update()
-    player1.draw()
-    player1.move()
+            if won:
+                status_text = font.render("YOU WIN! your score: " + str(int(250 * health_ratio)), True, (0, 255, 0))
+            else:
+                status_text = font.render("GAME OVER", True, (255, 0, 0))
 
-    for enemy in enemies[:]:
-        if enemy.update():
-            enemies.remove(enemy)
-        else:
-            enemy.draw()
-            player_rect = pygame.Rect(player1.x, player1.y - 50 + player1.crouching, 30, 50 - player1.crouching)
-            enemy_rect = pygame.Rect(enemy.x, enemy.y - 50, 30, 50)
-            if player_rect.colliderect(enemy_rect):
-                player1.health -= 10
+            screen.blit(status_text, (WIDTH // 2 - status_text.get_width() // 2, HEIGHT // 2 - 30))
+
+            if pygame.key.get_pressed()[pygame.K_r]:
+                reset_game()
+                end_time = None
+                pygame.display.flip()
+                continue
+
+            elapsed = pygame.time.get_ticks() - end_time
+            if elapsed >= 5000:
+                run = False
+
+            pygame.display.flip()
+            continue
+        
+        timer_ms -= dt
+        if timer_ms <= 0:
+            timer_ms = 0
+            won = True
+        
+        spawn_timer += 1
+        goop_timer += 1
+        if goop_timer > 120 and len(enemies) < 6:
+            enemies.append(Goop(player1.x))
+            goop_timer = 0
+        elif spawn_timer > 50 and len(enemies) < 6:
+            enemies.append(Enemy())
+            spawn_timer = 0
+        
+        player1.update()
+        player1.draw()
+        player1.move()
+
+        for enemy in enemies[:]:
+            if enemy.update():
                 enemies.remove(enemy)
+            else:
+                enemy.draw()
+                player_rect = pygame.Rect(player1.x, player1.y - 50 + player1.crouching, 30, 50 - player1.crouching)
+                enemy_rect = pygame.Rect(enemy.x, enemy.y - 50, 30, 50)
+                if player_rect.colliderect(enemy_rect):
+                    player1.health -= 10
+                    enemies.remove(enemy)
 
-    if player1.health <= 0:
-        player1.health = 0
-        game_over = True
+        if player1.health <= 0:
+            player1.health = 0
+            game_over = True
 
-    timer_text = font.render(f"Time: {timer_ms // 1000}", True, (255, 255, 255))
-    screen.blit(timer_text, (WIDTH - timer_text.get_width() - 10, 10))
+        timer_text = font.render(f"Time: {timer_ms // 1000}", True, (255, 255, 255))
+        screen.blit(timer_text, (WIDTH - timer_text.get_width() - 10, 10))
 
-    bar_x, bar_y = 10, 10
-    bar_width = 200
-    bar_height = 20
-    pygame.draw.rect(screen, (0, 0, 0), (bar_x, bar_y, bar_width + 2, bar_height + 2), 2)
-    health_ratio = player1.health / 100
-    pygame.draw.rect(screen, (0, 255, 0), (bar_x + 1, bar_y + 1, bar_width * health_ratio, bar_height))
-    health_text = font.render(f"{player1.health}/100", True, (255, 255, 255))
-    text_x = bar_x + bar_width // 2 - health_text.get_width() // 2
-    text_y = bar_y + bar_height // 2 - health_text.get_height() // 2
-    screen.blit(health_text, (text_x, text_y))
+        bar_x, bar_y = 10, 10
+        bar_width = 200
+        bar_height = 20
+        pygame.draw.rect(screen, (0, 0, 0), (bar_x, bar_y, bar_width + 2, bar_height + 2), 2)
+        pygame.draw.rect(screen, (0, 255, 0), (bar_x + 1, bar_y + 1, bar_width * health_ratio, bar_height))
+        health_text = font.render(f"{player1.health}/100", True, (255, 255, 255))
+        text_x = bar_x + bar_width // 2 - health_text.get_width() // 2
+        text_y = bar_y + bar_height // 2 - health_text.get_height() // 2
+        screen.blit(health_text, (text_x, text_y))
 
-    pygame.display.flip()
+        pygame.display.flip()
 
-pygame.quit()
-sys.exit()
+    update_score(int(250 * health_ratio))
+
+
+if __name__ == "__main__":
+    start_mini_game1v2()
