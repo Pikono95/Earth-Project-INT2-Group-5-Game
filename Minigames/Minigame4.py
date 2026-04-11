@@ -28,12 +28,21 @@ button_img = pygame.transform.scale(button_img, (75, 60))
 button_rect = button_img.get_rect(center=(WIDTH // 2, HEIGHT // 2))
 show_popup = False
 
-class ImageButton:
-    def __init__(self, image, pos, hover_tint=(30, 30, 30)):
+class Bubble:
+    def __init__(self, image, pos, popup_im = None, popup_dur = 6000, hover_tint=(30, 30, 30)):
         self.image = image
         self.hover_tint = hover_tint
         self.rect = image.get_rect(center=pos)
         self._hovered = False
+        self.pi = popup_im  # for popup images
+        self.pd = popup_dur
+        self.pu_timer = 0
+
+    def click(self, event): # for when the button is clicked
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.rect.collidepoint(event.pos):
+                if self.pi:
+                    self.pu_timer = self.pd
 
     def draw(self, surface):
         mouse_pos = pygame.mouse.get_pos()
@@ -46,25 +55,40 @@ class ImageButton:
         else:
             surface.blit(self.image, self.rect)
 
+    # popup function (images implemented in Assets)
+    # => makes the different info pictures appear depending on the button pressed
+    # implement timer to make the popup disappear after a few seconds and unable to be pressed again
+
+    def popup(self, surface, dt):
+        if self.pu_timer > 0:
+            self.pu_timer -= dt # dt being delta time (time difference)
+            popup_rect = self.pi.get_rect(center=surface.get_rect().center)
+            surface.blit(self.pi, popup_rect)
+
 
 # buttons to include: fridge, plastic bottles, trash bags, sink, light (switch)
+#to be done: implement popups in assets and redirect the button image loader to them (pygame.image.load(filename))
 
 buttons = [
-    ImageButton(button_img, pos=(200, 150)),
-    ImageButton(button_img, pos=(400, 300)),
-    ImageButton(button_img, pos=(700, 320)), #sink info button
+    Bubble(button_img, pos=(970, 165), popup_im=pygame.image.load("../Assets/trash_info.png").convert_alpha()), # plastic bottles info button
+    Bubble(button_img, pos=(1000, 300), popup_im=pygame.image.load("../Assets/trash_info.png").convert_alpha()), # fridge info button
+    Bubble(button_img, pos=(700, 320), popup_im=pygame.image.load("../Assets/trash_info.png").convert_alpha()), # sink info button
+    Bubble(button_img, pos=(480, 450), popup_im=pygame.image.load("../Assets/trash_info.png").convert_alpha()), # trash info button
+    Bubble(button_img, pos=(690, 160), popup_im=pygame.image.load("../Assets/light_info.png").convert_alpha()), # overhead light info button
 ]
 
-# popup function (images to be implemented in data) 
-# => makes the different info pictures appear depending on the button pressed
-# implement timer to make the popup disappear after a few seconds and unable to be pressed again
 
 # main loop
 running = True
 while running:
+    dt = clock.tick(60)
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        for button in buttons:
+            button.click(event)
+
 
     screen.fill((0, 0, 0))
     screen.blit(kitchen_image, (0, 0))
@@ -72,8 +96,11 @@ while running:
     for button in buttons:
         button.draw(screen)
 
+    for btn in buttons:
+        btn.popup(screen, dt)
+
     pygame.display.flip()
-    clock.tick(60)
+
 
 pygame.quit()
 sys.exit()
