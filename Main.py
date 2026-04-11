@@ -341,6 +341,7 @@ def level_menu():
                     Minigame3.start_mini_game3()
                 elif r5.collidepoint(pos):
                     from Minigames import Minigame4
+                    Minigame4.start_mini_game4()
         canvas.fill((0, 0, 0))
         canvas.blit(background_level, (0, 0))
 
