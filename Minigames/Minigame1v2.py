@@ -324,7 +324,7 @@ def start_mini_game1v2():
 
         pygame.display.flip()
 
-    update_score(int(250 * health_ratio))
+    update_score(int(300 * health_ratio))
 
 
 if __name__ == "__main__":
