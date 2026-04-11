@@ -98,6 +98,15 @@ PIXEL_FONT = {
     "T": ["TTTTT", "  T  ", "  T  ", "  T  ", "  T  ", "  T  ", "  T  "],
     "X": ["X   X", " X X ", "  X  ", "  X  ", " X X ", "X   X", "X   X"],
     "Y": ["Y   Y", " Y Y ", "  Y  ", "  Y  ", "  Y  ", "  Y  ", "  Y  "],
+    "M": ["M   M", "MM MM", "M M M", "M   M", "M   M", "M   M", "M   M"],
+    "P": ["PPPP ", "P   P", "P   P", "PPPP ", "P    ", "P    ", "P    "],
+    "H": ["H   H", "H   H", "H   H", "HHHHH", "H   H", "H   H", "H   H"],
+    "U": ["U   U", "U   U", "U   U", "U   U", "U   U", "U   U", " UUU "],
+    "B": ["BBBB ", "B   B", "B   B", "BBBB ", "B   B", "B   B", "BBBB "],
+    "K": ["K   K", "K  K ", "K K  ", "KK   ", "K K  ", "K  K ", "K   K"],
+    "W": ["W   W", "W   W", "W   W", "W W W", "W W W", "WW WW", " W W "],
+    "V": ["V   V", "V   V", "V   V", " V V ", " V V ", "  V  ", "  V  "],
+    "Z": ["ZZZZZ", "    Z", "   Z ", "  Z  ", " Z   ", "Z    ", "ZZZZZ"],
     "!": ["  !  ", "  !  ", "  !  ", "  !  ", "     ", "  !  ", "  !  "],
     ":": ["     ", "  x  ", "     ", "     ", "  x  ", "     ", "     "],
     " ": ["     ", "     ", "     ", "     ", "     ", "     ", "     "]
@@ -452,6 +461,81 @@ def result(score):
     show_end_screen(score)
 
 
+def show_instructions():
+    """Display instructions screen before level selection."""
+    play_btn = pygame.image.load("Assets/Play buntton.png").convert_alpha()
+    play_btn = pygame.transform.scale(play_btn, (300, 120))
+    
+    play_center = (BASE_W // 2, BASE_H // 2 + 300)
+    play_bbox = play_btn.get_bounding_rect()
+    play_off = (
+        play_bbox.centerx - play_btn.get_rect().centerx,
+        play_bbox.centery - play_btn.get_rect().centery
+    )
+    play_hit = pygame.Rect(0, 0, play_bbox.w, play_bbox.h)
+    play_hit.center = (play_center[0] + play_off[0], play_center[1] + play_off[1])
+    
+    canvas = pygame.Surface((BASE_W, BASE_H))
+    
+    instructions = [
+        "GOAL:",
+        "",
+        "Complete all minigames to",
+        "earn the highest score!",
+        "Each minigame teaches you",
+        "about protecting our planet.",
+        "Click the button below to start!",
+    ]
+    
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                pos = mouse_screen_to_base(event.pos)
+                if play_hit.collidepoint(pos):
+                    return True
+        
+        # Gradient background
+        gradient = create_gradient_surface(BASE_W, BASE_H, (50, 150, 100), (30, 100, 80))
+        canvas.blit(gradient, (0, 0))
+        
+        # Draw instruction text
+        y_offset = 150
+        for line in instructions:
+            if line:
+                text = render_pixel_text(line, pixel_size=7, color=(255, 255, 255), spacing=2)
+            else:
+                text = pygame.Surface((0, 0))
+            text_rect = text.get_rect(center=(BASE_W // 2, y_offset))
+            canvas.blit(text, text_rect)
+            y_offset += 70
+        
+        # Hover detection and button drawing
+        mouse_base = mouse_screen_to_base(pygame.mouse.get_pos())
+        hover_play = play_hit.collidepoint(mouse_base)
+        play_scale = HOVER_SCALE if hover_play else 1.0
+        play_img = scale_image(play_btn, play_scale)
+        play_rect = play_img.get_rect(center=play_center)
+        
+        # Update hitbox with scale
+        play_hit = pygame.Rect(0, 0, int(play_bbox.w * play_scale), int(play_bbox.h * play_scale))
+        play_hit.center = (
+            int(play_center[0] + play_off[0] * play_scale),
+            int(play_center[1] + play_off[1] * play_scale)
+        )
+        
+        canvas.blit(play_img, play_rect)
+        
+        # Scale and display
+        scale, off_x, off_y = compute_scale_and_offset()
+        canvas_scaled = pygame.transform.smoothscale(canvas, (int(BASE_W * scale), int(BASE_H * scale)))
+        window.fill((0, 0, 0))
+        window.blit(canvas_scaled, (int(off_x), int(off_y)))
+        pygame.display.flip()
+        clock.tick(60)
+
 
 # =========================
 # MAIN FLOW
@@ -471,6 +555,13 @@ def main():
     # Intro video with audio
     pygame.mixer.music.stop()
     play_video("Assets/video_intro.mp4", "Assets/video_audio.mp3")
+
+    # Instructions screen
+    proceed = show_instructions()
+    if not proceed:
+        pygame.mixer.music.stop()
+        pygame.quit()
+        return
 
     # Level selection menu
     level_menu()

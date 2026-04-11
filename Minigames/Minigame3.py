@@ -1,7 +1,7 @@
 def start_mini_game3():
     import pygame
     pygame.init()
-    screen = pygame.display.set_mode((1920, 1080))
+    screen = pygame.display.set_mode((1920, 1080), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
     running = True
     while running:
