@@ -285,8 +285,6 @@ def start_menu():
 def level_menu():
     canvas = pygame.Surface((BASE_W, BASE_H)).convert()
 
-    score = 0 
-
     # Musique du jeu
     pygame.mixer.music.load("Assets/Game music.mp3")
     pygame.mixer.music.play(-1)
@@ -303,9 +301,9 @@ def level_menu():
     quit_img = pygame.image.load("Assets/Quit.png").convert_alpha()
 
     # Positions
-    r1 = minigame_1.get_rect(topleft=(475, 400))
-    r2 = minigame_2.get_rect(topleft=(900, 400))
-    r3 = minigame_3.get_rect(topleft=(75, 400))
+    r1 = minigame_1.get_rect(topleft=(550, 200))
+    r2 = minigame_2.get_rect(topleft=(1050, 200))
+    r3 = minigame_3.get_rect(topleft=(75, 200))
     r4 = quit_img.get_rect(topleft=(1700, 50))
 
     running = True
@@ -352,6 +350,15 @@ def level_menu():
 
         pygame.display.flip()
         clock.tick(60)
+
+score = 0  
+
+def update_score(points):
+    global score
+    score += points
+
+
+
 
 def result (score):
     if score < 500:
