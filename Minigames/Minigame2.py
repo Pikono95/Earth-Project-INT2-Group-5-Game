@@ -1,51 +1,28 @@
+import time
 import pygame
 import math
 import sys
+import random
 
-# def start_mini_game2():
-#     import pygame
-#     pygame.init()
-#     screen = pygame.display.set_mode((1920, 1080))
-#     clock = pygame.time.Clock()
-#     running = True
-#     while running:
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT:
-#                 running = False
-#         dt = clock.tick(60) / 1000  
-#         screen.fill((0, 0, 0))
-#         font = pygame.font.Font(None, 74)
-#         text = font.render("Game to be done", True, (255, 255, 255))
-#         screen.blit(text, (760, 500))
-#         pygame.display
-
-# Initialisation Pygame
 pygame.init()
 
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+info = pygame.display.Info()
+WIDTH, HEIGHT = info.current_w, info.current_h
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
 clock = pygame.time.Clock()
 
-# Constantes physiques
+# Constantes
 g = 9.81 * 50
-
-# Facteur de projection pour simuler profondeur
 DEPTH_FACTOR = 0.5
 
-# Chargement images et redimensionnement
 BALL_IMG = pygame.image.load("assets/Minigame1.png").convert_alpha()
 TRASH_IMG = pygame.image.load("assets/Minigame1.png").convert_alpha()
 
-BALL_IMG = pygame.transform.scale(BALL_IMG, (24, 24))
-TRASH_IMG = pygame.transform.scale(TRASH_IMG, (150, 180))
+BALL_IMG = pygame.transform.scale(BALL_IMG, (35, 35))
+TRASH_IMG = pygame.transform.scale(TRASH_IMG, (180, 210))
 
-def normalize_angle(angle):
-    while angle < -math.pi:
-        angle += 2 * math.pi
-    while angle >= math.pi:
-        angle -= 2 * math.pi
-    return angle
-
+particles = []
 
 class Ball:
     def __init__(self, x, y, z, image):
@@ -63,45 +40,52 @@ class Ball:
         self.vz = 0.0
 
         self.is_moving = False
-
         self.rect = self.image.get_rect(center=(x, y))
+
+        self.trail = []
 
     def launch(self, force, angle_h, angle_v):
         self.vx = force * math.cos(angle_v) * math.sin(angle_h)
         self.vz = force * math.cos(angle_v) * math.cos(angle_h)
-        self.vy = -force * math.sin(angle_v) 
-
+        self.vy = -force * math.sin(angle_v)
         self.is_moving = True
 
     def update(self, dt):
-        if self.is_moving:
-            self.vy += g * dt
+        if not self.is_moving:
+            return
 
-            self.x += self.vx * dt
-            self.y += self.vy * dt
-            self.z += self.vz * dt
+        self.vy += g * dt
 
-            if self.y > HEIGHT - 50:
-                self.is_moving = False
-                self.x, self.y, self.z = self.start_x, self.start_y, self.start_z
-                self.vx = self.vy = self.vz = 0.0
-    
+        self.x += self.vx * dt
+        self.y += self.vy * dt
+        self.z += self.vz * dt
+
+        screen_x = int(self.x + self.z * DEPTH_FACTOR)
+        screen_y = int(self.y - self.z * DEPTH_FACTOR)
+        self.rect.center = (screen_x, screen_y)
+
+        self.trail.append((self.rect.center, 255))
+        if len(self.trail) > 10:
+            self.trail.pop(0)
+
+        if self.rect.bottom >= HEIGHT or self.rect.top <= 0 or self.rect.left <= 0 or self.rect.right >= WIDTH:
+            self.reset()
+
     def reset(self):
         self.x = self.start_x
         self.y = self.start_y
         self.z = self.start_z
-        self.vx = 0.0
-        self.vy = 0.0
-        self.vz = 0.0
+        self.vx = self.vy = self.vz = 0
         self.is_moving = False
-        self.rect.center = (int(self.x), int(self.y))
-
+        self.trail.clear()
 
     def draw(self, surface):
-        screen_x = int(self.x + self.z * DEPTH_FACTOR)
-        screen_y = int(self.y - self.z * DEPTH_FACTOR)
+        for i, (pos, alpha) in enumerate(self.trail):
+            alpha = int(255 * (i / len(self.trail)))
+            surf = pygame.Surface((10, 10), pygame.SRCALPHA)
+            pygame.draw.circle(surf, (255, 255, 0, alpha), (5, 5), 5)
+            surface.blit(surf, pos)
 
-        self.rect = self.image.get_rect(center=(screen_x, screen_y))
         surface.blit(self.image, self.rect)
 
 class Trash:
@@ -110,52 +94,59 @@ class Trash:
         self.x = x
         self.y = y
         self.rect = self.image.get_rect(bottomleft=(x, y))
-        self.top_rect = pygame.Rect(
-            self.rect.left,
-            self.rect.top,
-            self.rect.width,
-            10
-        )
-        self.top_rect_right = pygame.Rect(
-            self.rect.left,
-            self.rect.top,
-            self.rect.width,
-            10
-        )
-        self.top_rect_right = pygame.Rect(
-            self.rect.right,
-            self.rect.top,
-            self.rect.width - 10,
-            10
-        )
-        self.bot_rect = pygame.Rect(
-            self.rect.left,
-            self.rect.bottom ,
-            self.rect.width,
-            10
-        )
 
-    def draw(self, surface):
-        surface.blit(self.image, self.rect)
-        pygame.draw.rect(surface, (255, 0, 0,100), self.top_rect, 2)  # Dessiner la zone haute en rouge
+    def draw(self, screen):
+        # bounce réduit (divisé par ~3)
+        offset = math.sin(time.time() * 2) * 2
+
+        draw_x = self.x
+        draw_y = self.y + offset
+
+        # synchronisation collision
+        self.rect.topleft = (draw_x, draw_y - self.image.get_height())
+
+        screen.blit(self.image, (draw_x, draw_y))
 
 ball = Ball(100, HEIGHT - 80, 0, BALL_IMG)
 
-# Position des poubelles 
 trash_list = [
-    Trash(150, HEIGHT - 300, TRASH_IMG),
-    Trash(350, HEIGHT - 300, TRASH_IMG),
-    Trash(550, HEIGHT - 300, TRASH_IMG),
+    Trash(WIDTH - 200, HEIGHT - 50, TRASH_IMG),
+    Trash(WIDTH - 350, HEIGHT - 200, TRASH_IMG),
+    Trash(WIDTH - 500, HEIGHT - 350, TRASH_IMG)
 ]
 
 charging = False
 force = 0.0
 max_force = 1000.0
-charge_rate = 500.0  # unité de force par seconde
+charge_rate = 500.0
+
+
+def predict_trajectory(ball, force, angle_h, angle_v):
+    points = []
+
+    vx = force * math.cos(angle_v) * math.sin(angle_h)
+    vz = force * math.cos(angle_v) * math.cos(angle_h)
+    vy = -force * math.sin(angle_v)
+
+    x, y, z = ball.x, ball.y, ball.z
+
+    for i in range(30):
+        t = i * 0.1
+
+        x_temp = x + vx * t
+        y_temp = y + vy * t + 0.5 * g * t * t
+        z_temp = z + vz * t
+
+        screen_x = int(x_temp + z_temp * DEPTH_FACTOR)
+        screen_y = int(y_temp - z_temp * DEPTH_FACTOR)
+
+        points.append((screen_x, screen_y))
+
+    return points
 
 running = True
 while running:
-    dt = clock.tick(60) / 1000 
+    dt = clock.tick(60) / 1000
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -170,19 +161,13 @@ while running:
             if event.key == pygame.K_SPACE and charging:
                 charging = False
 
-                # Récupération position souris
                 mx, my = pygame.mouse.get_pos()
 
-                # Calcul des angles pour lancer
                 dx = mx - ball.x
-                dy = ball.y - my  
+                dy = ball.y - my
 
-                distance_camera_ball = 500  
-
-                angle_h = math.atan2(dx, distance_camera_ball)
-                angle_h = normalize_angle(angle_h)
-                angle_v = math.atan2(dy, distance_camera_ball)
-                angle_v = normalize_angle(angle_v)
+                angle_h = math.atan2(dx, 500)
+                angle_v = math.atan2(dy, 500)
 
                 ball.launch(force, angle_h, angle_v)
 
@@ -191,22 +176,53 @@ while running:
         if force > max_force:
             force = max_force
 
+    # fond dégradé corrigé
+    for y in range(HEIGHT):
+        ratio = y / HEIGHT
+        r = int(135 * (1 - ratio) + 50 * ratio)
+        g_col = int(206 * (1 - ratio) + 50 * ratio)
+        b = int(235 * (1 - ratio) + 100 * ratio)
+        pygame.draw.line(screen, (r, g_col, b), (0, y), (WIDTH, y))
 
-    # Affichage
-    screen.fill((100, 100, 100))
+    if charging:
+        mx, my = pygame.mouse.get_pos()
+        dx = mx - ball.x
+        dy = ball.y - my
+
+        angle_h = math.atan2(dx, 500)
+        angle_v = math.atan2(dy, 500)
+
+        points = predict_trajectory(ball, force, angle_h, angle_v)
+
+        for i, point in enumerate(points):
+            alpha = int(255 * (1 - i / len(points)))
+            surf = pygame.Surface((8, 8), pygame.SRCALPHA)
+            pygame.draw.circle(surf, (255, 255, 255, alpha), (4, 4), 4)
+            screen.blit(surf, point)
 
     for trash in trash_list:
         trash.draw(screen)
-        if ball.rect.colliderect(trash.top_rect):
-            print("La balle touche une poubelle !")
-            ball.reset()
+
     ball.update(dt)
     ball.draw(screen)
 
-    # Affichage barre de charge
+    for p in particles[:]:
+        p["x"] += p["vx"] * dt
+        p["y"] += p["vy"] * dt
+        p["vy"] += 300 * dt
+        p["life"] -= dt
+
+        surf = pygame.Surface((6, 6), pygame.SRCALPHA)
+        pygame.draw.circle(surf, (255, 255, 0, int(255 * p["life"])), (3, 3), 3)
+        screen.blit(surf, (p["x"], p["y"]))
+
+        if p["life"] <= 0:
+            particles.remove(p)
+
     if charging:
-        bar_width = int(500 * (force / max_force))
-        pygame.draw.rect(screen, (0, 255, 0), (50, 550, bar_width, 20))
+        ratio = force / max_force
+        color = (int(255 * ratio), 255 - int(255 * ratio), 0)
+        pygame.draw.rect(screen, color, (50, 550, int(500 * ratio), 20))
         pygame.draw.rect(screen, (255, 255, 255), (50, 550, 500, 20), 2)
 
     pygame.display.flip()
