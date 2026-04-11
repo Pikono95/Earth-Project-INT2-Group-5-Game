@@ -12,6 +12,12 @@ from Main import update_score
 # - Faire le quiz de fin de minigame pour valider les connaissances (score sur 25?)
 
 
+
+# the bubble disappearence is not working, but the click to open and close the popups is working, 
+
+
+
+
 def start_mini_game4():
     pygame.init()
 
@@ -19,17 +25,38 @@ def start_mini_game4():
     ASSETS_DIR = BASE_DIR / "Assets"
 
     WIDTH, HEIGHT = 1280, 720
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
     clock = pygame.time.Clock()
     pygame.display.set_caption("Kitchen Quiz")
+    
+    # Scaling function for fullscreen
+    def compute_scale_and_offset():
+        """Computes scale factor and offset for letterboxing."""
+        ww, wh = screen.get_size()
+        scale = min(ww / WIDTH, wh / HEIGHT)
+        off_x = (ww - WIDTH * scale) / 2
+        off_y = (wh - HEIGHT * scale) / 2
+        return scale, off_x, off_y
+    
+    def screen_to_canvas_coords(screen_pos):
+        """Converts screen coordinates to canvas coordinates."""
+        scale, off_x, off_y = compute_scale_and_offset()
+        canvas_x = (screen_pos[0] - off_x) / scale
+        canvas_y = (screen_pos[1] - off_y) / scale
+        return (canvas_x, canvas_y)
+    
+    # Create canvas for rendering at logical resolution
+    canvas = pygame.Surface((WIDTH, HEIGHT))
+    
     kitchen_image = pygame.image.load(ASSETS_DIR / "kitchen.png").convert_alpha()
     kitchen_image = pygame.transform.smoothscale(kitchen_image, (WIDTH, HEIGHT))
 
     button_img = pygame.image.load(ASSETS_DIR / "info_bubble.png").convert_alpha()
     button_img = pygame.transform.scale(button_img, (75, 60))  
-    button_rect = button_img.get_rect(center=(WIDTH // 2, HEIGHT // 2))
-    show_popup = False
 
+    # Track open popups globally
+    max_open_popups = 2
+    
     class Bubble:
         def __init__(self, image, pos, popup_im = None, hover_tint=(30, 30, 30)):
             self.image = image
@@ -40,12 +67,20 @@ def start_mini_game4():
             self.show_popup = False
             self.pressed = False # so that the popups don't reappear once pressed
 
-        def click(self, event): # for when the button is clicked and escape button pressed
+        def click(self, event, all_buttons): # for when the button is clicked and escape button pressed
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.rect.collidepoint(event.pos) and self.pi and not self.pressed:
-                    self.show_popup = True
-                    self.pressed = True #makes it so that once pressed, the bubbles won't trigger their respective popups anymore
-
+                canvas_pos = screen_to_canvas_coords(event.pos)
+                if self.rect.collidepoint(canvas_pos) and self.pi:
+                    # Toggle popup if already open
+                    if self.show_popup:
+                        self.show_popup = False
+                    else:
+                        # Count currently open popups
+                        open_count = sum(1 for b in all_buttons if b.show_popup)
+                        # Only open if less than max
+                        if open_count < max_open_popups:
+                            self.show_popup = True
+                            self.pressed = True  # Mark as viewed
 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.show_popup = False
@@ -53,7 +88,7 @@ def start_mini_game4():
 
 
         def draw(self, surface):
-            mouse_pos = pygame.mouse.get_pos()
+            mouse_pos = screen_to_canvas_coords(pygame.mouse.get_pos())
             self._hovered = self.rect.collidepoint(mouse_pos)
 
             if self._hovered:
@@ -63,17 +98,21 @@ def start_mini_game4():
             else:
                 surface.blit(self.image, self.rect)
 
-            if self.show_popup and self.pi: #prints popup until escape is pressed
-                popup_rect = self.pi.get_rect(center=surface.get_rect().center)
-                surface.blit(self.pi, popup_rect)
-
         # popup function (images implemented in Assets)
         # => makes the different info pictures appear depending on the button pressed
-
-        def draw_popup(self, surface):  # draws the popup
+        
+        def draw_popup_to_screen(self, screen, scale, off_x, off_y):
+            """Draw popup directly to screen at fullscreen scale to avoid pixelation."""
             if self.show_popup and self.pi:
-                popup_rect = self.pi.get_rect(center=surface.get_rect().center)
-                surface.blit(self.pi, popup_rect)
+                # Scale the popup image smoothly to match fullscreen scaling
+                scaled_popup = pygame.transform.smoothscale(
+                    self.pi, 
+                    (int(self.pi.get_width() * scale), int(self.pi.get_height() * scale))
+                )
+                # Center on screen (not canvas)
+                screen_center = screen.get_rect().center
+                popup_rect = scaled_popup.get_rect(center=screen_center)
+                screen.blit(scaled_popup, popup_rect)
 
 
     # buttons included: fridge, plastic bottles, trash bags, sink, light (switch)
@@ -85,6 +124,9 @@ def start_mini_game4():
         Bubble(button_img, pos=(480, 450), popup_im=pygame.image.load(ASSETS_DIR / "trash_info.png").convert_alpha()), # trash info button
         Bubble(button_img, pos=(690, 160), popup_im=pygame.image.load(ASSETS_DIR / "light_info.png").convert_alpha()), # overhead light info button
     ]
+
+    # Store original popup images before scaling
+    popup_images = [b.pi for b in buttons if b.pi]
 
     # quiz
 
@@ -132,12 +174,13 @@ def start_mini_game4():
                 return
 
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                if self.true_rect.collidepoint(event.pos):
+                canvas_pos = screen_to_canvas_coords(event.pos)
+                if self.true_rect.collidepoint(canvas_pos):
                     if self.questions[self.current][1]: #check if answer is true
                         self.score += 5 # we add 5 points since the final score is out of 25
                     self.advance()
 
-                elif self.false_rect.collidepoint(event.pos):
+                elif self.false_rect.collidepoint(canvas_pos):
                     if not self.questions[self.current][1]: #check if it's false
                         self.score += 5
                     self.advance()
@@ -161,7 +204,8 @@ def start_mini_game4():
             self.blit_btn(surface, self.false_btn, self.false_rect)
 
         def blit_btn(self, surface, img, rect):
-            if rect.collidepoint(pygame.mouse.get_pos()):
+            canvas_pos = screen_to_canvas_coords(pygame.mouse.get_pos())
+            if rect.collidepoint(canvas_pos):
                 hover = img.copy()
                 hover.fill((30, 30, 30, 0), special_flags=pygame.BLEND_RGB_ADD)
                 surface.blit(hover, rect)
@@ -195,7 +239,7 @@ def start_mini_game4():
                 quiz.click(event)
             else:
                 for button in buttons:
-                    button.click(event)
+                    button.click(event, buttons)
 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 if all(button.pressed for button in buttons) and not quiz.active:
@@ -204,16 +248,25 @@ def start_mini_game4():
                     for button in buttons:
                         button.show_popup = False
 
-        screen.fill((0, 0, 0))
-        screen.blit(kitchen_image, (0, 0))
+        canvas.fill((0, 0, 0))
+        canvas.blit(kitchen_image, (0, 0))
 
         if not quiz.active:  # only draw bubbles when quiz is not running
             for button in buttons:
-                button.draw(screen)
-            for button in buttons:
-                button.draw_popup(screen)
+                button.draw(canvas)
 
-        quiz.draw(screen)
+        quiz.draw(canvas)
+
+        # Scale canvas to fullscreen
+        scale, off_x, off_y = compute_scale_and_offset()
+        canvas_scaled = pygame.transform.smoothscale(canvas, (int(WIDTH * scale), int(HEIGHT * scale)))
+        screen.fill((0, 0, 0))
+        screen.blit(canvas_scaled, (int(off_x), int(off_y)))
+        
+        # Draw popups directly to screen to avoid pixelation
+        if not quiz.active:
+            for button in buttons:
+                button.draw_popup_to_screen(screen, scale, off_x, off_y)
 
         pygame.display.flip()
         clock.tick(60)
