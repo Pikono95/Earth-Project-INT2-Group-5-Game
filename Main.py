@@ -81,11 +81,24 @@ PIXEL_FONT = {
     "7": ["xxxxx", "    x", "   x ", "  x  ", " x   ", " x   ", " x   "],
     "8": [" xxx ", "x   x", "x   x", " xxx ", "x   x", "x   x", " xxx "],
     "9": [" xxx ", "x   x", "x   x", " xxxx", "    x", "    x", " xxx "],
-    "S": [" xxx ", "x   x", "x    ", " xxx ", "    x", "x   x", " xxx "],
+    "A": ["  A  ", " A A ", "A   A", "AAAAA", "A   A", "A   A", "A   A"],
+    "B": ["BBBB ", "B   B", "B   B", "BBBB ", "B   B", "B   B", "BBBB "],
     "C": [" xxx ", "x   x", "x    ", "x    ", "x    ", "x   x", " xxx "],
+    "D": ["DDD  ", "D  D ", "D   D", "D   D", "D   D", "D  D ", "DDD  "],
+    "E": ["xxxxx", "x    ", "x    ", "xxxx ", "x    ", "x    ", "xxxxx"],
+    "F": ["FFFFF", "F    ", "F    ", "FFFF ", "F    ", "F    ", "F    "],
+    "G": [" GGG ", "G    ", "G    ", "G GGG", "G   G", "G   G", " GGG "],
+    "I": [" III ", "  I  ", "  I  ", "  I  ", "  I  ", "  I  ", " III "],
+    "J": [" JJJJ", "    J", "    J", "    J", "    J", "J   J", " JJJ "],
+    "L": ["L    ", "L    ", "L    ", "L    ", "L    ", "L    ", "LLLLL"],
+    "N": ["N   N", "NN  N", "N N N", "N  NN", "N   N", "N   N", "N   N"],
     "O": [" xxx ", "x   x", "x   x", "x   x", "x   x", "x   x", " xxx "],
     "R": ["xxxx ", "x   x", "x   x", "xxxx ", "x  x ", "x   x", "x   x"],
-    "E": ["xxxxx", "x    ", "x    ", "xxxx ", "x    ", "x    ", "xxxxx"],
+    "S": [" xxx ", "x   x", "x    ", " xxx ", "    x", "x   x", " xxx "],
+    "T": ["TTTTT", "  T  ", "  T  ", "  T  ", "  T  ", "  T  ", "  T  "],
+    "X": ["X   X", " X X ", "  X  ", "  X  ", " X X ", "X   X", "X   X"],
+    "Y": ["Y   Y", " Y Y ", "  Y  ", "  Y  ", "  Y  ", "  Y  ", "  Y  "],
+    "!": ["  !  ", "  !  ", "  !  ", "  !  ", "     ", "  !  ", "  !  "],
     ":": ["     ", "  x  ", "     ", "     ", "  x  ", "     ", "     "],
     " ": ["     ", "     ", "     ", "     ", "     ", "     ", "     "]
 }
@@ -306,6 +319,10 @@ def level_menu():
     r3 = minigame_3.get_rect(topleft=(75, 200))
     r5 = minigame_4.get_rect(topleft=(1450, 200))
 
+    end = [0, 0, 0, 0]  # To track completed mini-games
+    def end_modify(index):
+        end[index] = 1
+
     running = True
     while running:
         for event in pygame.event.get():
@@ -330,8 +347,8 @@ def level_menu():
         font = pygame.font.Font(None, 74)
 
         # shows score with pixel art style
-        score_label = render_pixel_text("SCORE:", pixel_size=8, color=(255, 255, 255), spacing=2)
-        score_digits = render_pixel_text(str(score), pixel_size=8, color=(255, 255, 255), spacing=2)
+        score_label = render_pixel_text("SCORE:", pixel_size=8, color=(227,227,227), spacing=2)
+        score_digits = render_pixel_text(str(score), pixel_size=8, color=(227,227,227), spacing=2)
         canvas.blit(score_label, (50, 50))
         canvas.blit(score_digits, (50 + score_label.get_width() + 10, 50))
 
@@ -350,6 +367,8 @@ def level_menu():
 
         pygame.display.flip()
         clock.tick(60)
+        if end == [1, 1, 1, 1]:  # All mini-games completed
+            running = False
 
 score = 0  
 
@@ -360,7 +379,64 @@ def update_score(points):
 
 
 
-def result (score):
+def create_gradient_surface(width, height, color1, color2):
+    """Create a vertical gradient surface from color1 to color2."""
+    surface = pygame.Surface((width, height))
+    for y in range(height):
+        ratio = y / height
+        r = int(color1[0] * (1 - ratio) + color2[0] * ratio)
+        g = int(color1[1] * (1 - ratio) + color2[1] * ratio)
+        b = int(color1[2] * (1 - ratio) + color2[2] * ratio)
+        pygame.draw.line(surface, (r, g, b), (0, y), (width, y))
+    return surface
+
+
+def show_end_screen(score):
+    """Display the end screen with score and message."""
+    canvas = pygame.Surface((BASE_W, BASE_H))
+
+    # Gradient background
+    gradient = create_gradient_surface(BASE_W, BASE_H, (0, 100, 200), (0, 50, 100))
+    canvas.blit(gradient, (0, 0))
+
+    # Determine message based on score
+    if score < 500:
+        message = "too bad ! try again !"
+        color = (255, 100, 100)
+    elif score < 1000:
+        message = "so close you got this !"
+        color = (255, 255, 100)
+    else:
+        message = "Excellent!"
+        color = (100, 255, 100)
+
+    # Score text
+    score_text = render_pixel_text(f"Final Score: {score}", pixel_size=12, color=(255, 255, 255), spacing=2)
+    message_text = render_pixel_text(message, pixel_size=12, color=color, spacing=2)
+
+    # Position texts
+    score_rect = score_text.get_rect(center=(BASE_W // 2, BASE_H // 2 - 50))
+    message_rect = message_text.get_rect(center=(BASE_W // 2, BASE_H // 2 + 50))
+
+    canvas.blit(score_text, score_rect)
+    canvas.blit(message_text, message_rect)
+
+    # Display for 3 seconds
+    start_time = pygame.time.get_ticks()
+    while pygame.time.get_ticks() - start_time < 3000:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return
+
+        scale, off_x, off_y = compute_scale_and_offset()
+        canvas_scaled = pygame.transform.smoothscale(canvas, (int(BASE_W * scale), int(BASE_H * scale)))
+        window.fill((0, 0, 0))
+        window.blit(canvas_scaled, (int(off_x), int(off_y)))
+        pygame.display.flip()
+        clock.tick(60)
+
+
+def result(score):
     if score < 500:
         # BAD
         play_video("Assets/Defeat.mp4", "Assets/Defeat.mp3")
@@ -371,6 +447,9 @@ def result (score):
         # WIN
         play_video("Assets/Victory.mp4", "Assets/Victory.mp3")
 
+    # Show end screen after video
+    show_end_screen(score)
+
 
 
 # =========================
@@ -378,6 +457,7 @@ def result (score):
 # =========================
 
 def main():
+    global score
     # Main menu
     start = start_menu()
     score = 0  
