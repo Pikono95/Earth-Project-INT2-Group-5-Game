@@ -1,25 +1,25 @@
 def start_mini_game3():
     import pygame
     import random
-
     pygame.init()
 
-    screen = pygame.display.set_mode((1280, 720))
+    screen = pygame.display.set_mode((1920, 1080), pygame.FULLSCREEN)
     pygame.display.set_caption("Bathroom Chaos - Save the Water")
     clock = pygame.time.Clock()
 
     bg_img = pygame.image.load("assets/bathroom_bg.png").convert()
+    bg_img = pygame.transform.scale(bg_img, (1920, 1080))
 
     tap_img = pygame.image.load("assets/tap.png").convert_alpha()
     shower_img = pygame.image.load("assets/shower.png").convert_alpha()
     big_img = pygame.image.load("assets/leak_big.png").convert_alpha()
 
-    tap_img = pygame.transform.scale(tap_img, (90, 90))
-    shower_img = pygame.transform.scale(shower_img, (90, 90))
-    big_img = pygame.transform.scale(big_img, (110, 110))
+    tap_img = pygame.transform.scale(tap_img, (135, 135))
+    shower_img = pygame.transform.scale(shower_img, (135, 135))
+    big_img = pygame.transform.scale(big_img, (165, 165))
 
-    font = pygame.font.Font(None, 40)
-    big_font = pygame.font.Font(None, 70)
+    font = pygame.font.Font(None, 60)
+    big_font = pygame.font.Font(None, 105)
 
     water = 100
     score = 0
@@ -29,8 +29,8 @@ def start_mini_game3():
 
     class Leak:
         def __init__(self):
-            self.x = random.randint(100, 1100)
-            self.y = random.randint(120, 620)
+            self.x = random.randint(150, 1650)
+            self.y = random.randint(180, 930)
             self.active = True
             self.type = random.choice(["tap", "shower", "big"])
 
@@ -64,9 +64,9 @@ def start_mini_game3():
         info = font.render("Stop water leaks before it's too late!", True, (255, 255, 255))
         play = font.render("Press SPACE to start", True, (255, 200, 50))
 
-        screen.blit(title, (420, 200))
-        screen.blit(info, (360, 300))
-        screen.blit(play, (430, 400))
+        screen.blit(title, (630, 300))
+        screen.blit(info, (540, 450))
+        screen.blit(play, (645, 600))
 
         pygame.display.flip()
 
@@ -133,14 +133,14 @@ def start_mini_game3():
         for leak in leaks:
             leak.draw()
 
-        pygame.draw.rect(screen, (200, 50, 50), (40, 40, 300, 25))
-        pygame.draw.rect(screen, (50, 150, 255), (40, 40, int(3 * water), 25))
+        pygame.draw.rect(screen, (200, 50, 50), (60, 60, 450, 38))
+        pygame.draw.rect(screen, (50, 150, 255), (60, 60, int(4.5 * water), 38))
 
         score_text = font.render(f"Score: {score}", True, (255, 255, 255))
         time_text = font.render(f"Time: {int(game_duration - total_time)}", True, (255, 255, 255))
 
-        screen.blit(score_text, (40, 80))
-        screen.blit(time_text, (40, 120))
+        screen.blit(score_text, (60, 120))
+        screen.blit(time_text, (60, 180))
 
         pygame.display.flip()
 
@@ -149,6 +149,8 @@ def start_mini_game3():
 
     win_score = 300
     almost_score = 250
+    if score > win_score:
+        score = win_score
 
     if score >= win_score:
         message = "YOU WON!"
@@ -160,14 +162,16 @@ def start_mini_game3():
         message = "YOU LOST..."
         color = (255, 80, 80)
 
+    
     end_title = big_font.render(message, True, color)
     final_score = font.render(f"Final Score: {score}", True, (255, 255, 255))
 
-    screen.blit(end_title, (360, 250))
-    screen.blit(final_score, (520, 360))
+    screen.blit(end_title, (540, 375))
+    screen.blit(final_score, (780, 540))
 
     pygame.display.flip()
     pygame.time.wait(4000)
+    return score
 
 
 if __name__ == "__main__":

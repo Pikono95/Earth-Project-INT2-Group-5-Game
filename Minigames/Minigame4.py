@@ -2,7 +2,6 @@ import pygame
 import sys
 import random
 from pathlib import Path
-from Main import update_score
 
 # Quiz pour le "Kitchen" 
 # Structure: 
@@ -177,12 +176,12 @@ def start_mini_game4():
                 canvas_pos = screen_to_canvas_coords(event.pos)
                 if self.true_rect.collidepoint(canvas_pos):
                     if self.questions[self.current][1]: #check if answer is true
-                        self.score += 5 # we add 5 points since the final score is out of 25
+                        self.score += 60 # we add 60 points since the final score is out of 300
                     self.advance()
 
                 elif self.false_rect.collidepoint(canvas_pos):
                     if not self.questions[self.current][1]: #check if it's false
-                        self.score += 5
+                        self.score += 60
                     self.advance()
 
         def advance(self):  #advances to the next question and stops when end is reached
@@ -219,7 +218,7 @@ def start_mini_game4():
 
             font = pygame.font.SysFont("Arial", 48, bold=True)
             score_text = font.render(
-                f"{self.score} / {len(self.questions) * 5}", True, (60, 60, 60)
+                f"{self.score} / {len(self.questions) * 60}", True, (60, 60, 60)
             )
             surface.blit(score_text, score_text.get_rect(center=surface.get_rect().center))
 
@@ -275,8 +274,7 @@ def start_mini_game4():
             end_time = pygame.time.get_ticks()
 
         if end_time and pygame.time.get_ticks() - end_time > 3000:
-            update_score(quiz.score)
-            running = False
+            return quiz.score  # Return score to main game after showing it for 3 seconds
 
 
 if __name__ == "__main__":

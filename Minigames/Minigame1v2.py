@@ -5,9 +5,6 @@ import random
 
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-from Main import update_score
-
 pygame.init()
 
 WIDTH, HEIGHT = pygame.display.Info().current_w, pygame.display.Info().current_h
@@ -375,7 +372,7 @@ def start_mini_game1v2():
 
         pygame.display.flip()
 
-    update_score(int(300 * health_ratio))
+    return int(300 * health_ratio)  # Return score based on remaining health
 
 
 if __name__ == "__main__":

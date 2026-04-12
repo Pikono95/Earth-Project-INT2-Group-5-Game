@@ -3,8 +3,7 @@
 # =========================
 
 import pygame              # Main engine (window, events, images, sounds)
-import cv2                 # OpenCV to read video (images only)
-from Minigames import Minigame3  # Mini-games
+import cv2                 # OpenCV to read video (images only) # Mini-games
 
 
 # =========================
@@ -304,7 +303,7 @@ def start_menu():
 # LEVEL MENU
 # =========================
 
-def level_menu():
+def level_menu(score = 0):
     canvas = pygame.Surface((BASE_W, BASE_H)).convert()
 
     # Game music
@@ -325,8 +324,8 @@ def level_menu():
     # Positions
     r1 = minigame_1.get_rect(topleft=(550, 200))
     r2 = minigame_2.get_rect(topleft=(1050, 200))
-    r3 = minigame_3.get_rect(topleft=(75, 200))
-    r5 = minigame_4.get_rect(topleft=(1450, 200))
+    r3 = minigame_3.get_rect(topleft=(1450, 200))
+    r5 = minigame_4.get_rect(topleft=(75, 200))
 
     end = [0, 0, 0, 0]  # To track completed mini-games
     def end_modify(index):
@@ -341,16 +340,22 @@ def level_menu():
                 running = False
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 pos = mouse_screen_to_base(event.pos)
-                if r1.collidepoint(pos):
+                if r1.collidepoint(pos) and end[0] == 0:
                     from Minigames import Minigame1v2
-                    Minigame1v2.start_mini_game1v2()
-                elif r2.collidepoint(pos):
+                    score += Minigame1v2.start_mini_game1v2()
+                    end_modify(0)
+                elif r2.collidepoint(pos) and end[1] == 0:
                     from Minigames import Minigame2
-                elif r3.collidepoint(pos):
-                    Minigame3.start_mini_game3()
-                elif r5.collidepoint(pos):
+                    score += Minigame2.start_mini_game2()
+                    end_modify(1)
+                elif r3.collidepoint(pos) and end[2] == 0:
+                    from Minigames import Minigame3 
+                    score += Minigame3.start_mini_game3()
+                    end_modify(2)
+                elif r5.collidepoint(pos) and end[3] == 0:
                     from Minigames import Minigame4
-                    Minigame4.start_mini_game4()
+                    score += Minigame4.start_mini_game4()
+                    end_modify(3)
         canvas.fill((0, 0, 0))
         canvas.blit(background_level, (0, 0))
 
@@ -379,12 +384,7 @@ def level_menu():
         clock.tick(60)
         if end == [1, 1, 1, 1]:  # All mini-games completed
             running = False
-
-score = 0  
-
-def update_score(points):
-    global score
-    score += points
+    return score
 
 
 
@@ -545,7 +545,6 @@ def main():
     global score
     # Main menu
     start = start_menu()
-    score = 0  
 
     if not start:
         pygame.mixer.music.stop()
@@ -564,7 +563,7 @@ def main():
         return
 
     # Level selection menu
-    level_menu()
+    score = level_menu()
 
     # Final result
     result(score)
