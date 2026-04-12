@@ -143,3 +143,32 @@ def start_mini_game3():
         screen.blit(time_text, (40, 120))
 
         pygame.display.flip()
+
+
+    screen.fill((0, 0, 0))
+
+    win_score = 300
+    almost_score = 250
+
+    if score >= win_score:
+        message = "YOU WON!"
+        color = (50, 255, 100)
+    elif score >= almost_score:
+        message = "YOU WERE ALMOST THERE..."
+        color = (255, 200, 50)
+    else:
+        message = "YOU LOST..."
+        color = (255, 80, 80)
+
+    end_title = big_font.render(message, True, color)
+    final_score = font.render(f"Final Score: {score}", True, (255, 255, 255))
+
+    screen.blit(end_title, (360, 250))
+    screen.blit(final_score, (520, 360))
+
+    pygame.display.flip()
+    pygame.time.wait(4000)
+
+
+if __name__ == "__main__":
+    start_mini_game3()
