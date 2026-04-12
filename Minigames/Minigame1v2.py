@@ -1,11 +1,16 @@
 import pygame
 import sys
+import os
 import random
+
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
 from Main import update_score
 
 pygame.init()
 
-WIDTH, HEIGHT = 1000, 500
+WIDTH, HEIGHT = pygame.display.Info().current_w, pygame.display.Info().current_h
 screen = None
 clock = None
 font = pygame.font.SysFont(None, 24)
@@ -13,7 +18,7 @@ font = pygame.font.SysFont(None, 24)
 
 variables = {
     "Gravity" : 1,
-    "Ground _height" : 400,
+    "Ground _height" : 450,
     "sky color" : (40, 60, 120),
 
 }
@@ -28,13 +33,13 @@ class Enemy:
         if x is None:
             if random.choice([True, False]):
                 self.x = -30
-                self.vx = 5
+                self.vx = 8
             else:
                 self.x = WIDTH
-                self.vx = -5
+                self.vx = -8
         else:
             self.x = x
-            self.vx = vx if vx is not None else 5
+            self.vx = vx if vx is not None else 8
         self.vy = vy
         self.facing = facing
     
@@ -67,7 +72,7 @@ class Goop:
 
     def update(self):
         self.y += self.vy
-        if self.y > HEIGHT:
+        if self.y > variables["Ground _height"]:
             return True
         return False
 
@@ -103,13 +108,11 @@ class Player:
             self.vx = 0
 
 
-        if self.x == 0 or self.x == WIDTH - 30:
+        if self.x == 0:
             self.vx = -self.vx
         
         if self.x < 0:
             self.x = 0
-        elif self.x > WIDTH - 30:
-            self.x = WIDTH - 30
         if pygame.key.get_pressed()[keys["crouch"]]:
             self.crouching = 25
             if self.jumping == True and self.vy < 0:
@@ -165,7 +168,7 @@ class Player:
             self.vx = 0
 
 
-        if self.x == 0 or self.x == WIDTH - 30:
+        if self.x == 0:
             self.vx = -self.vx
         
         if self.x < 0:
@@ -227,8 +230,16 @@ def reset_game():
 def start_mini_game1v2():
     global screen, clock, player1, enemies, spawn_timer, goop_timer, timer_ms, game_over, won, end_time
 
-    screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    WIDTH, HEIGHT = screen.get_size()
+    variables["Ground _height"] = int(HEIGHT * 0.9)
     clock = pygame.time.Clock()
+    
+    tile_width = 100
+    num_tiles = (WIDTH // tile_width) + 1
+    tile_states = [0] * num_tiles  # 0: safe, 1: warning, 2: polluted
+    tile_timers = [0] * num_tiles
+    lava_timer = 0
     player1 = Player(100, variables["Ground _height"], 0, 0, "right")
     enemies = []
     spawn_timer = 0
@@ -242,7 +253,41 @@ def start_mini_game1v2():
     while run:
         dt = clock.tick(60)
         screen.fill(variables["sky color"])
-        pygame.draw.rect(screen, (80, 180, 60), (0, variables["Ground _height"], WIDTH, HEIGHT - variables["Ground _height"]))
+        
+        # Update pollution tiles
+        lava_timer += dt
+        if lava_timer > 4000:
+            lava_count = random.randint(1, 2)
+            safe_tiles = [i for i in range(num_tiles) if tile_states[i] == 0]
+            if len(safe_tiles) >= lava_count:
+                lava_indices = random.sample(safe_tiles, lava_count)
+                for i in lava_indices:
+                    tile_states[i] = 1  # warning
+                    tile_timers[i] = 180  # 3 seconds
+            lava_timer = 0
+        
+        # Update tile timers
+        for i in range(num_tiles):
+            if tile_states[i] == 1:
+                tile_timers[i] -= 1
+                if tile_timers[i] <= 0:
+                    tile_states[i] = 2  # polluted
+        
+        # Reset some lava tiles
+        for i in range(num_tiles):
+            if tile_states[i] == 2 and random.random() < 0.005:
+                tile_states[i] = 0
+        
+        # Draw ground tiles
+        for i in range(num_tiles):
+            if tile_states[i] == 2:
+                color = (255, 0, 0)  # polluted red
+            elif tile_states[i] == 1:
+                color = (128, 0, 128)  # violet warning
+            else:
+                color = (80, 180, 60)  # safe green
+            pygame.draw.rect(screen, color, (i * tile_width, variables["Ground _height"], tile_width, HEIGHT - variables["Ground _height"]))
+        
         health_ratio = player1.health / 100
         
         for event in pygame.event.get():
@@ -283,16 +328,22 @@ def start_mini_game1v2():
         
         spawn_timer += 1
         goop_timer += 1
-        if goop_timer > 120 and len(enemies) < 6:
+        if goop_timer > 20 and len(enemies) < 10:
             enemies.append(Goop(player1.x))
             goop_timer = 0
-        elif spawn_timer > 50 and len(enemies) < 6:
+        elif spawn_timer > 26 and len(enemies) < 10:
             enemies.append(Enemy())
             spawn_timer = 0
         
         player1.update()
         player1.draw()
         player1.move()
+
+        # Check for polluted tile damage
+        tile_index = int(player1.x // tile_width)
+        if tile_index < len(tile_states) and tile_states[tile_index] == 2:
+            if random.random() < 0.05:
+                player1.health -= 1
 
         for enemy in enemies[:]:
             if enemy.update():
@@ -324,7 +375,7 @@ def start_mini_game1v2():
 
         pygame.display.flip()
 
-    update_score(int(250 * health_ratio))
+    update_score(int(300 * health_ratio))
 
 
 if __name__ == "__main__":
