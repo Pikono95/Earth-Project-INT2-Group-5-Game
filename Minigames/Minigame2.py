@@ -37,7 +37,10 @@ score = 0
 TARGET_SCORE = 200
 
 game_over = False
+<<<<<<< HEAD
 victory = False
+=======
+>>>>>>> 4f07fd1851ce1707215584d5be4683524eb911f1
 
 TRASH_TYPES = ["plastic", "paper", "glass"]
 
@@ -170,7 +173,11 @@ while running:
 
     screen.fill((30, 30, 50))
 
+<<<<<<< HEAD
     # trajectory
+=======
+    # trajectory prediction
+>>>>>>> 4f07fd1851ce1707215584d5be4683524eb911f1
     if charging and not game_over:
         mx, my = pygame.mouse.get_pos()
         dx = mx - ball.rect.centerx
@@ -179,6 +186,10 @@ while running:
         angle_h = math.atan2(dy, dx)
         angle_v = math.atan2(dy, 500)
 
+<<<<<<< HEAD
+=======
+        # simulate trajectory
+>>>>>>> 4f07fd1851ce1707215584d5be4683524eb911f1
         vx = force * math.cos(angle_v) * math.cos(angle_h)
         vz = force * math.cos(angle_v) * math.sin(angle_h)
         vy = -force * math.sin(angle_v)
@@ -207,18 +218,28 @@ while running:
                                 b.rect.centerx, b.rect.centery, b.radius):
 
                 if b.add_trash(ball.trash_type):
+<<<<<<< HEAD
                     score += 35
                 else:
                     if score > 0: 
                         score -= 10
+=======
+                    score += 1
+>>>>>>> 4f07fd1851ce1707215584d5be4683524eb911f1
 
                 ball.reset()
                 break
 
+<<<<<<< HEAD
     # end condition
     if all(b.is_full() for b in bins):
         game_over = True
         victory = score >= TARGET_SCORE
+=======
+    # check win condition
+    if all(b.is_full() for b in bins):
+        game_over = True
+>>>>>>> 4f07fd1851ce1707215584d5be4683524eb911f1
 
     # charge bar
     if charging:
@@ -236,11 +257,16 @@ while running:
 
     if game_over:
         big_font = pygame.font.SysFont(None, 100)
+<<<<<<< HEAD
         if victory:
             text = big_font.render("YOU WIN", True, (0,255,0))
         else:
             text = big_font.render("YOU LOSE", True, (255,0,0))
         screen.blit(text, (WIDTH//2 - 250, HEIGHT//2))
+=======
+        text = big_font.render("YOU WIN", True, (0,255,0))
+        screen.blit(text, (WIDTH//2 - 200, HEIGHT//2))
+>>>>>>> 4f07fd1851ce1707215584d5be4683524eb911f1
 
     pygame.display.flip()
 
