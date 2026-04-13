@@ -6,8 +6,6 @@ import random
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from Main import update_score
-
 #initialisation of the screen and pygame variables
 
 pygame.init()
