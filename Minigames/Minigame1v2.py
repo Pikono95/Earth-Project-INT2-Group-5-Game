@@ -5,6 +5,11 @@ import random
 
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from Main import update_score
+
+#initialisation of the screen and pygame variables
+
 pygame.init()
 
 WIDTH, HEIGHT = pygame.display.Info().current_w, pygame.display.Info().current_h
@@ -12,6 +17,7 @@ screen = None
 clock = None
 font = pygame.font.SysFont(None, 24)
 
+#global variables for the game
 
 variables = {
     "Gravity" : 1,
@@ -19,6 +25,8 @@ variables = {
     "sky color" : (40, 60, 120),
 
 }
+
+#ennemy : trash can that moves horizontally and does damage to the player on contact
 
 class Enemy:
 
@@ -55,6 +63,8 @@ class Enemy:
         pygame.draw.line(screen, (80, 80, 80), (can_x + 16, can_y + 15), (can_x + 16, can_y + 45), 2)
         pygame.draw.line(screen, (80, 80, 80), (can_x + 24, can_y + 15), (can_x + 24, can_y + 45), 2)
 
+#goop : green slime that falls and does damage
+
 class Goop:
 
     def __init__(self, player_x=None):
@@ -76,9 +86,12 @@ class Goop:
     def draw(self):
         pygame.draw.circle(screen, self.color, (self.x + 15, self.y - 25), 15)
 
+#player : white rectangle
+#movement possibles : zqsd, crouch, jump
+
 class Player: 
 
-    def __init__(self,x,y,vx,vy,facing):
+    def __init__(self,x,y,vx,vy,facing): #variables of the class input
         self.x = x
         self.y = y
         self.vx = vx
@@ -86,6 +99,8 @@ class Player:
         self.facing = facing
         self.health = 100
     
+    #update the position of the player, applies gravity, ground collision and wall collision
+
     def update(self):
         self.x += self.vx
         self.y += self.vy
@@ -110,7 +125,7 @@ class Player:
         
         if self.x < 0:
             self.x = 0
-        if pygame.key.get_pressed()[keys["crouch"]]:
+        if pygame.key.get_pressed()[keys["crouch"]]: #crouching reduces the size of the player, it's hitbox and the speed of the player is reduced
             self.crouching = 25
             if self.jumping == True and self.vy < 0:
                 self.vy = 40
@@ -123,7 +138,7 @@ class Player:
 
         
 
-    def draw(self):
+    def draw(self): #the rect draw of the player, it's hitbox is reduced whene crouching
         pygame.draw.rect(screen, (255, 255, 255), (self.x, self.y - 50 + self.crouching, 30, 50 - self.crouching))
 
     def move(self):
@@ -214,10 +229,13 @@ keys = {
     "crouch" : pygame.K_s,
 }
 
-def reset_game():
+def reset_game(): #the reset game function that allows the game to restart when the player looses
     global player1, enemies, spawn_timer, goop_timer, timer_ms, game_over, won
     player1 = Player(100, variables["Ground _height"], 0, 0, "right")
     enemies = []
+
+    #the timers thingies that controls the spawn of ennemies and goop the timer of the game also
+
     spawn_timer = 0
     goop_timer = 0
     timer_ms = 20000
@@ -232,6 +250,8 @@ def start_mini_game1v2():
     variables["Ground _height"] = int(HEIGHT * 0.9)
     clock = pygame.time.Clock()
     
+    ################################################ game variables
+
     tile_width = 100
     num_tiles = (WIDTH // tile_width) + 1
     tile_states = [0] * num_tiles  # 0: safe, 1: warning, 2: polluted
@@ -246,6 +266,8 @@ def start_mini_game1v2():
     won = False
     end_time = None
     run = True
+    ##############################################################
+
 
     while run:
         dt = clock.tick(60)
@@ -260,7 +282,7 @@ def start_mini_game1v2():
                 lava_indices = random.sample(safe_tiles, lava_count)
                 for i in lava_indices:
                     tile_states[i] = 1  # warning
-                    tile_timers[i] = 180  # 3 seconds
+                    tile_timers[i] = 180  # 3 seconds => 60 frame a second * 3
             lava_timer = 0
         
         # Update tile timers
@@ -332,6 +354,8 @@ def start_mini_game1v2():
             enemies.append(Enemy())
             spawn_timer = 0
         
+        # the loop of the player update draw and all
+
         player1.update()
         player1.draw()
         player1.move()
@@ -353,6 +377,8 @@ def start_mini_game1v2():
                     player1.health -= 10
                     enemies.remove(enemy)
 
+        #game over loop
+
         if player1.health <= 0:
             player1.health = 0
             game_over = True
@@ -372,8 +398,11 @@ def start_mini_game1v2():
 
         pygame.display.flip()
 
-    return int(300 * health_ratio)  # Return score based on remaining health
+    #the game score is based on the ratio of health the player has at the end of the game
+    update_score(int(300 * health_ratio))
 
+
+#launches the game
 
 if __name__ == "__main__":
     start_mini_game1v2()
