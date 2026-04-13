@@ -399,8 +399,7 @@ def start_mini_game1v2():
         pygame.display.flip()
 
     #the game score is based on the ratio of health the player has at the end of the game
-    update_score(int(300 * health_ratio))
-
+    return int(300 * health_ratio)
 
 #launches the game
 
